@@ -332,8 +332,9 @@ compiler}. The attributes are:
 
   * `priority` - When there are multiple directives defined on a single DOM element, sometimes it
     is necessary to specify the order in which the directives are applied. The `priority` is used
-    to sort the directives before their `compile` functions get called. Higher `priority` goes
-    first. The order of directives within the same priority is undefined.
+    to sort the directives before their `compile` functions get called. Priority is defined as a
+    number. Directives with greater numerical `priority` are compiled first. The order of directives with
+    the same priority is undefined. The default priority is `0`.
 
   * `terminal` - If set to true then the current `priority` will be the last set of directives
     which will execute (any directives at the current priority will still execute
@@ -480,8 +481,8 @@ done in a linking function rather than in a compile function.
 
 A compile function can have a return value which can be either a function or an object.
 
-* returning a function - is equivalent to registering the linking function via the `link` property
-  of the config object when the compile function is empty.
+* returning a (post-link) function - is equivalent to registering the linking function via the
+  `link` property of the config object when the compile function is empty.
 
 * returning an object with function(s) registered via `pre` and `post` properties - allows you to
   control when a linking function should be called during the linking phase. See info about
