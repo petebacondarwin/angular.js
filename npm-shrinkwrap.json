@@ -546,14 +546,6 @@
             "chokidar": {
               "version": "0.8.2",
               "dependencies": {
-                "fsevents": {
-                  "version": "0.2.0",
-                  "dependencies": {
-                    "nan": {
-                      "version": "0.8.0"
-                    }
-                  }
-                },
                 "recursive-readdir": {
                   "version": "0.0.2"
                 }
@@ -2016,7 +2008,7 @@
       }
     },
     "karma": {
-      "version": "0.12.9",
+      "version": "0.12.16",
       "dependencies": {
         "di": {
           "version": "0.0.1"
@@ -2088,10 +2080,21 @@
           }
         },
         "glob": {
-          "version": "3.2.9",
+          "version": "3.2.10",
           "dependencies": {
             "inherits": {
               "version": "2.0.1"
+            },
+            "minimatch": {
+              "version": "0.3.0",
+              "dependencies": {
+                "lru-cache": {
+                  "version": "2.5.0"
+                },
+                "sigmund": {
+                  "version": "1.0.0"
+                }
+              }
             }
           }
         },
@@ -2125,7 +2128,12 @@
                   "version": "0.3.2"
                 },
                 "mkdirp": {
-                  "version": "0.4.0"
+                  "version": "0.5.0",
+                  "dependencies": {
+                    "minimist": {
+                      "version": "0.0.8"
+                    }
+                  }
                 },
                 "ncp": {
                   "version": "0.4.2"
@@ -2141,12 +2149,12 @@
               "version": "0.0.2"
             },
             "minimist": {
-              "version": "0.0.8"
+              "version": "0.0.10"
             }
           }
         },
         "rimraf": {
-          "version": "2.2.6"
+          "version": "2.2.8"
         },
         "q": {
           "version": "0.9.7"
@@ -2238,7 +2246,7 @@
               "version": "0.0.3"
             },
             "debug": {
-              "version": "0.8.0"
+              "version": "0.8.1"
             },
             "methods": {
               "version": "0.1.0"
@@ -2287,7 +2295,7 @@
       }
     },
     "karma-browserstack-launcher": {
-      "version": "0.0.7",
+      "version": "0.0.8",
       "dependencies": {
         "browserstack": {
           "version": "1.0.1"
