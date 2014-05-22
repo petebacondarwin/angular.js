@@ -936,8 +936,10 @@ function $CompileProvider($provide, $$sanitizeUriProvider) {
       // return a linking function if we have found anything, null otherwise
       return linkFnFound ? compositeLinkFn : null;
 
-      function compositeLinkFn(scope, nodeList, $rootElement, boundTranscludeFn) {
+      function compositeLinkFn(scope, nodeList, $rootElement, parentBoundTranscludeFn) {
         var nodeLinkFn, childLinkFn, node, $node, childScope, i, ii, n, childBoundTranscludeFn;
+
+        var topBoundTranscludeFn = createBoundTranscludeFn(scope, transcludeFn);
 
         // copy nodeList so that linking doesn't break due to live list updates.
         var nodeListLength = nodeList.length,
@@ -962,18 +964,25 @@ function $CompileProvider($provide, $$sanitizeUriProvider) {
 
             // We need to create a new boundTranscludeFn if
             //  - a directive on this element wants to transclude
-            //  or
-            //  - there is no boundTranscludeFn already and a transcludeFn was passed in
-            if ( nodeLinkFn.transcludeOnThisElement || (!boundTranscludeFn && transcludeFn) ) {
-              childBoundTranscludeFn = createBoundTranscludeFn(scope, nodeLinkFn.transclude || transcludeFn);
+            // We do not create a new boundTranscludeFn if
+            //  - a directive provides a template and parentBoundTranscludeFn exists
+            //
+            // We need to create a new boundTranscludeFn if
+            //  - there is no parentBoundTranscludeFn already and a transcludeFn was passed in
+            if (nodeLinkFn.transcludeOnThisElement) {
+              childBoundTranscludeFn = createBoundTranscludeFn(scope, nodeLinkFn.transclude);
+            } else if (!nodeLinkFn.templateOnThisElement && parentBoundTranscludeFn) {
+              childBoundTranscludeFn = parentBoundTranscludeFn;
+            } else if (transcludeFn) {
+              childBoundTranscludeFn = createBoundTranscludeFn(scope, transcludeFn);
             } else {
-              childBoundTranscludeFn = boundTranscludeFn;
+              childBoundTranscludeFn = null;
             }
 
             nodeLinkFn(childLinkFn, childScope, node, $rootElement, childBoundTranscludeFn);
 
           } else if (childLinkFn) {
-            childLinkFn(scope, node.childNodes, undefined, boundTranscludeFn);
+            childLinkFn(scope, node.childNodes, undefined, parentBoundTranscludeFn);
           }
         }
       }
@@ -1172,6 +1181,7 @@ function $CompileProvider($provide, $$sanitizeUriProvider) {
           templateDirective = previousCompileContext.templateDirective,
           nonTlbTranscludeDirective = previousCompileContext.nonTlbTranscludeDirective,
           hasTranscludeDirective = false,
+          hasTemplate = false,
           hasElementTranscludeDirective = previousCompileContext.hasElementTranscludeDirective,
           $compileNode = templateAttrs.$$element = jqLite(compileNode),
           directive,
@@ -1262,6 +1272,7 @@ function $CompileProvider($provide, $$sanitizeUriProvider) {
         }
 
         if (directive.template) {
+          hasTemplate = true;
           assertNoDuplicate('template', templateDirective, directive, $compileNode);
           templateDirective = directive;
 
@@ -1311,6 +1322,7 @@ function $CompileProvider($provide, $$sanitizeUriProvider) {
         }
 
         if (directive.templateUrl) {
+          hasTemplate = true;
           assertNoDuplicate('template', templateDirective, directive, $compileNode);
           templateDirective = directive;
 
@@ -1348,6 +1360,7 @@ function $CompileProvider($provide, $$sanitizeUriProvider) {
 
       nodeLinkFn.scope = newScopeDirective && newScopeDirective.scope === true;
       nodeLinkFn.transcludeOnThisElement = hasTranscludeDirective;
+      nodeLinkFn.templateOnThisElement = hasTemplate;
       nodeLinkFn.transclude = childTranscludeFn;
 
       previousCompileContext.hasElementTranscludeDirective = hasElementTranscludeDirective;
