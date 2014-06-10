@@ -4852,6 +4852,70 @@ describe('$compile', function() {
 
       expect(element.text()).toBe('-->|x|');
     }));
+
+
+    it("should pass transclusion through to template of a 'replace' directive", function() {
+
+      // So the problem here appears to be if you have:
+      // - a templateUrl+replace directive (info) inside an async transclusion directive (trans)
+      // - and the info directive also has a transclusion-based directive at its root (transSync)
+      // In this scenario, the transcludeFn is not passed to the transSync nodeLinkFn at link time.
+      //
+      // (The trans directive is simulating what ng-if does, which is call its transludeFn during a
+      // subsequent digest if its value evaluates to true)
+      //
+      // If the trans directive is not async then the transcludeFn does get passed.
+      //
+      // In debugging you can see that the delayedNodeLinkFn is not passing the transcludeFn down
+      // to the afterTemplateNodeLinkFn
+
+      module(function() {
+        directive('transSync', function() {
+          return {
+            transclude: true,
+            link: function(scope, element, attr, ctrl, transclude) {
+
+              expect(transclude).toEqual(jasmine.any(Function));
+
+              console.warn('transSync link', scope && scope.$id, transclude);
+              var child = transclude();
+              element.after(child);
+            }
+          };
+        });
+
+        directive('trans', function($timeout) {
+          return {
+            transclude: true,
+            link: function(scope, element, attrs, ctrl, transclude) {
+
+              console.warn('trans link', scope && scope.$id, transclude);
+
+              $timeout(function doTransclusion()  {
+                console.warn('trans - timeout', scope && scope.$id, transclude);
+                var child = transclude();
+                element.after(child);
+              });
+            }
+          };
+        });
+
+        directive('info', function() {
+          return {
+            //template: '<div trans>hi (cached)</div>',
+            templateUrl: "info.html",
+            replace: true
+          };
+        });
+      });
+      inject(function($compile, $rootScope, $templateCache, $timeout) {
+        $templateCache.put('info.html', '<div trans-sync>hi (cached)</div>');
+
+        element = $compile('<div><div trans><div info></div></div></div>')($rootScope);
+        $timeout.flush();
+      });
+
+    });
   });
 
 
