@@ -4855,7 +4855,7 @@ describe('$compile', function() {
 
 
     it("should pass transclusion through to template of a 'replace' directive", function() {
-
+      var i = 0;
       // So the problem here appears to be if you have:
       // - a templateUrl+replace directive (info) inside an async transclusion directive (trans)
       // - and the info directive also has a transclusion-based directive at its root (transSync)
@@ -4869,17 +4869,19 @@ describe('$compile', function() {
       // In debugging you can see that the delayedNodeLinkFn is not passing the transcludeFn down
       // to the afterTemplateNodeLinkFn
 
-      module(function() {
+      module(function($exceptionHandlerProvider) {
+        $exceptionHandlerProvider.mode('log');
         directive('transSync', function() {
           return {
             transclude: true,
             link: function(scope, element, attr, ctrl, transclude) {
-
               expect(transclude).toEqual(jasmine.any(Function));
 
               console.warn('transSync link', scope && scope.$id, transclude);
-              var child = transclude();
-              element.after(child);
+              element.attr("trans-sync", '' + ++i);
+              var child = transclude(scope, function(child) {
+                element.after(child);
+              });
             }
           };
         });
@@ -4893,8 +4895,10 @@ describe('$compile', function() {
 
               $timeout(function doTransclusion()  {
                 console.warn('trans - timeout', scope && scope.$id, transclude);
-                var child = transclude();
-                element.after(child);
+                element.attr("trans", '' + ++i);
+                var child = transclude(scope, function(child) {
+                  element.after(child);
+                });
               });
             }
           };
@@ -4904,15 +4908,34 @@ describe('$compile', function() {
           return {
             //template: '<div trans>hi (cached)</div>',
             templateUrl: "info.html",
-            replace: true
+            replace: true,
+            link: function(s, element) {
+              element.attr("info", '' + ++i);
+            }
           };
         });
       });
-      inject(function($compile, $rootScope, $templateCache, $timeout) {
+      inject(function($compile, $rootScope, $templateCache, $timeout, $exceptionHandler) {
         $templateCache.put('info.html', '<div trans-sync>hi (cached)</div>');
 
         element = $compile('<div><div trans><div info></div></div></div>')($rootScope);
         $timeout.flush();
+        var children = element.children();
+        // Make sure there was no error linking, which would occur if any of the transclude
+        // functions were unavailable
+        expect($exceptionHandler.errors.length).toBe(0);
+
+        // Test that the markup is as expected.
+        //  <div class="ng-scope">
+        //    <div trans="1"></div>
+        //    <div trans-sync="2" info="3"></div>
+        //    <span class="ng-scope">hi (cached)</span> [[transSync -> element.after(child))]]
+        //  </div>
+        expect(children.length).toBe(3);
+        expect(children.eq(0).attr("trans")).toBe("1");
+        expect(children.eq(1).attr("trans-sync")).toBe("2");
+        expect(children.eq(1).attr("info")).toBe("3");
+        expect(children.eq(2).text()).toMatch(/hi \(cached\)/);
       });
 
     });
