@@ -56,7 +56,6 @@ describe('$anchorScroll', function() {
     var mockedDoc = {};
     docSpies = {};
 
-    initialReadyState = initialReadyState || 'complete';
     var propsToPassThrough = ['body', 'documentElement'];
     var methodsToPassThrough = [
       'getElementById',
@@ -100,7 +99,6 @@ describe('$anchorScroll', function() {
           scrollBy: (windowSpies.scrollBy = jasmine.createSpy('$window.scrollBy')),
           document: createMockDocument(initialReadyState),
           navigator: {},
-          pageYOffset: 0,
           getComputedStyle: function(elem) {
             return getComputedStyle(elem);
           }
@@ -223,9 +221,9 @@ describe('$anchorScroll', function() {
   });
 
 
-  describe('in respect to `document.readyState`', function() {
+  describe('with respect to `document.readyState`', function() {
 
-    beforeEach(createMockWindow('mocked'));
+    beforeEach(createMockWindow('interactive'));
 
 
     it('should wait for `document.readyState === "complete"', inject(
@@ -398,9 +396,6 @@ describe('$anchorScroll', function() {
   });
 
 
-  // TODO: Add tests for <body> with:
-  //       1. border/margin/padding !== 0
-  //       2. box-sizing === border-box
   describe('yOffset', function() {
 
     function expectScrollingWithOffset(identifierCountMap, offsetList) {
@@ -422,12 +417,47 @@ describe('$anchorScroll', function() {
       return expectScrollingWithOffset(identifierCountMap, []);
     }
 
-    function setupBodyForOffsetTesting() {
+    function setupBodyForOffsetTesting(styles) {
+      styles = styles || {};
+
       return function($window) {
         var style = $window.document.body.style;
-        style.border = 'none';
-        style.margin = '0';
-        style.padding = '0';
+        style.border = styles.border || 'none';
+        style.margin = styles.margin || '0';
+        style.padding = styles.padding || '0';
+        style.boxSizing = styles.boxSizing || null;
+      };
+    }
+
+    function setupForNearEndOfPageTesting(borderWidth, marginWidth, paddingWidth,
+                                          yOffset, necessaryYOffset) {
+      return function($window) {
+        // In order to make sure that when scrolling all the way down, the element's top can't reach
+        // the top of the viewport, the element's height is calculated as follows:
+        //   1. take the viewport's height
+        //   2. substract the height of the bottom border/margin/padding
+        //   3. substract the distance we want to have from the viewport's top
+        //      (yOffset - necessaryYOffset)
+        var viewportHeight = $window.document.documentElement.clientHeight;
+        var elemHeight = viewportHeight - (borderWidth + marginWidth + paddingWidth +
+                                           yOffset - necessaryYOffset);
+        var cssText = [
+          'border:none',
+          'display:block',
+          'height:' + elemHeight + 'px',
+          'margin:0',
+          'padding:0',
+          ''].join(';');
+
+        forEach($window.document.body.children, function(elem) {
+          elem.style.cssText = cssText;
+        });
+
+        // Make sure scrolling does actually take place
+        // (this is necessary for the current test)
+        forEach(elmSpy, function(spy, identifier) {
+          elmSpy[identifier] = spy.andCallThrough();
+        });
       };
     }
 
@@ -437,27 +467,154 @@ describe('$anchorScroll', function() {
       };
     }
 
-    function updateMockPageYOffset() {
-      return function($window) {
-        $window.pageYOffset = window.pageYOffset;
-      };
-    }
-
     beforeEach(createMockWindow());
-    beforeEach(inject(setupBodyForOffsetTesting()));
 
 
-    describe('when set as a fixed number', function() {
+    describe('and body with no border/margin/padding', function() {
 
+      beforeEach(inject(setupBodyForOffsetTesting()));
+
+
+      describe('when set as a fixed number', function() {
+
+        var yOffsetNumber = 50;
+
+        beforeEach(inject(setYOffset(yOffsetNumber)));
+
+
+        it('should scroll with vertical offset', inject(
+          addElements('id=some'),
+          changeHashTo('some'),
+          expectScrollingWithOffset('id=some', yOffsetNumber)));
+
+
+        it('should use the correct vertical offset when changing `yOffset` at runtime', inject(
+          addElements('id=some'),
+          changeHashTo('some'),
+          setYOffset(yOffsetNumber - 10),
+          callAnchorScroll(),
+          expectScrollingWithOffset({'id=some': 2}, [yOffsetNumber, yOffsetNumber - 10])));
+
+
+        it('should adjust the vertical offset for elements near the end of the page', function() {
+
+          var targetAdjustedOffset = 20;
+
+          inject(
+            addElements('id=some1', 'id=some2'),
+            setupForNearEndOfPageTesting(0, 0, 0, yOffsetNumber, targetAdjustedOffset),
+            changeHashTo('some2'),
+            expectScrollingWithOffset('id=some2', targetAdjustedOffset));
+        });
+      });
+
+
+      describe('when set as a function', function() {
+
+        it('should scroll with vertical offset', function() {
+
+          var val = 0;
+          var increment = 10;
+
+          function yOffsetFunction() {
+            val += increment;
+            return val;
+          }
+
+          inject(
+            addElements('id=id1', 'name=name2'),
+            setYOffset(yOffsetFunction),
+            changeHashTo('id1'),
+            changeHashTo('name2'),
+            changeHashTo('id1'),
+            callAnchorScroll(),
+            expectScrollingWithOffset({
+              'id=id1': 3,
+              'name=name2': 1
+            }, [
+              1 * increment,
+              2 * increment,
+              3 * increment,
+              4 * increment
+            ]));
+        });
+      });
+
+
+      describe('when set as a jqLite element', function() {
+
+        function createAndSetYOffsetElement(styleSpecs) {
+          var cssText = '';
+          forEach(styleSpecs, function(value, key) {
+            cssText += key + ':' + value + ';';
+          });
+
+          var jqElem = jqLite('<div style="' + cssText + '"></div>');
+
+          return function($anchorScroll, $window) {
+            jqLite($window.document.body).append(jqElem);
+            $anchorScroll.yOffset = jqElem;
+          };
+        }
+
+
+        it('should scroll with vertical offset when `top === 0`', inject(
+          createAndSetYOffsetElement({
+            background: 'DarkOrchid',
+            height: '50px',
+            position: 'fixed',
+            top: '0',
+          }),
+          addElements('id=some'),
+          changeHashTo('some'),
+          expectScrollingWithOffset('id=some', 50)));
+
+
+        it('should scroll with vertical offset when `top > 0`', inject(
+          createAndSetYOffsetElement({
+            height: '50px',
+            position: 'fixed',
+            top: '50px',
+          }),
+          addElements('id=some'),
+          changeHashTo('some'),
+          expectScrollingWithOffset('id=some', 100)));
+
+
+        it('should scroll without vertical offset when `position !== fixed`', inject(
+          createAndSetYOffsetElement({
+            height: '50px',
+            position: 'absolute',
+            top: '0',
+          }),
+          addElements('id=some'),
+          changeHashTo('some'),
+          expectScrollingWithoutOffset('id=some')));
+      });
+    });
+
+
+    describe('and body with border/margin/padding', function() {
+
+      var borderWidth = 4;
+      var marginWidth = 8;
+      var paddingWidth = 16;
       var yOffsetNumber = 50;
+      var necessaryYOffset = yOffsetNumber - borderWidth - marginWidth - paddingWidth;
 
-      beforeEach(inject(setYOffset(yOffsetNumber)));
+      beforeEach(inject(
+        setupBodyForOffsetTesting({
+          border: borderWidth + 'px solid',
+          margin: marginWidth + 'px',
+          padding: paddingWidth + 'px'
+        }),
+        setYOffset(yOffsetNumber)));
 
 
       it('should scroll with vertical offset', inject(
         addElements('id=some'),
         changeHashTo('some'),
-        expectScrollingWithOffset('id=some', yOffsetNumber)));
+        expectScrollingWithOffset('id=some', necessaryYOffset)));
 
 
       it('should use the correct vertical offset when changing `yOffset` at runtime', inject(
@@ -465,127 +622,66 @@ describe('$anchorScroll', function() {
         changeHashTo('some'),
         setYOffset(yOffsetNumber - 10),
         callAnchorScroll(),
-        expectScrollingWithOffset({'id=some': 2}, [yOffsetNumber, yOffsetNumber - 10])));
+        expectScrollingWithOffset({'id=some': 2}, [necessaryYOffset, necessaryYOffset - 10])));
 
 
       it('should adjust the vertical offset for elements near the end of the page', function() {
 
-        var targetAdjustedOffset = 25;
+        var targetAdjustedOffset = 20;
 
         inject(
           addElements('id=some1', 'id=some2'),
-          function($window) {
-            // Make sure the elements are just a little shorter than the viewport height
-            var viewportHeight = $window.document.documentElement.clientHeight;
-            var elemHeight = viewportHeight - (yOffsetNumber - targetAdjustedOffset);
-            var cssText = [
-              'border:none',
-              'display:block',
-              'height:' + elemHeight + 'px',
-              'margin:0',
-              'padding:0',
-              ''].join(';');
-
-            forEach($window.document.body.children, function(elem) {
-              elem.style.cssText = cssText;
-            });
-
-            // Make sure scrolling does actually take place
-            // (this is necessary for the current test)
-            forEach(elmSpy, function(spy, identifier) {
-              elmSpy[identifier] = spy.andCallThrough();
-            });
-          },
+          setupForNearEndOfPageTesting(borderWidth, marginWidth, paddingWidth,
+                                       yOffsetNumber, targetAdjustedOffset),
           changeHashTo('some2'),
-          updateMockPageYOffset(),
-          resetAllSpies(),
-          callAnchorScroll(),
           expectScrollingWithOffset('id=some2', targetAdjustedOffset));
       });
     });
 
 
-    describe('when set as a function', function() {
+    describe('and body with border/margin/padding and boxSizing', function() {
 
-      it('should scroll with vertical offset', function() {
+      var borderWidth = 4;
+      var marginWidth = 8;
+      var paddingWidth = 16;
+      var yOffsetNumber = 50;
+      var necessaryYOffset = yOffsetNumber - borderWidth - marginWidth - paddingWidth;
 
-        var val = 0;
-        var increment = 10;
+      beforeEach(inject(
+        setupBodyForOffsetTesting({
+          border: borderWidth + 'px solid',
+          margin: marginWidth + 'px',
+          padding: paddingWidth + 'px',
+          boxSizing: 'border-box'
+        }),
+        setYOffset(yOffsetNumber)));
 
-        function yOffsetFunction() {
-          val += increment;
-          return val;
-        }
+
+      it('should scroll with vertical offset', inject(
+        addElements('id=some'),
+        changeHashTo('some'),
+        expectScrollingWithOffset('id=some', necessaryYOffset)));
+
+
+      it('should use the correct vertical offset when changing `yOffset` at runtime', inject(
+        addElements('id=some'),
+        changeHashTo('some'),
+        setYOffset(yOffsetNumber - 10),
+        callAnchorScroll(),
+        expectScrollingWithOffset({'id=some': 2}, [necessaryYOffset, necessaryYOffset - 10])));
+
+
+      it('should adjust the vertical offset for elements near the end of the page', function() {
+
+        var targetAdjustedOffset = 20;
 
         inject(
-          addElements('id=id1', 'name=name2'),
-          setYOffset(yOffsetFunction),
-          changeHashTo('id1'),
-          changeHashTo('name2'),
-          changeHashTo('id1'),
-          callAnchorScroll(),
-          expectScrollingWithOffset({
-            'id=id1': 3,
-            'name=name2': 1
-          }, [
-            1 * increment,
-            2 * increment,
-            3 * increment,
-            4 * increment
-          ]));
+          addElements('id=some1', 'id=some2'),
+          setupForNearEndOfPageTesting(borderWidth, marginWidth, paddingWidth,
+                                       yOffsetNumber, targetAdjustedOffset),
+          changeHashTo('some2'),
+          expectScrollingWithOffset('id=some2', targetAdjustedOffset));
       });
-    });
-
-
-    describe('when set as a jqLite element', function() {
-
-      function createAndSetYOffsetElement(styleSpecs) {
-        var cssText = '';
-        forEach(styleSpecs, function(value, key) {
-          cssText += key + ':' + value + ';';
-        });
-
-        var jqElem = jqLite('<div style="' + cssText + '"></div>');
-
-        return function($anchorScroll, $window) {
-          jqLite($window.document.body).append(jqElem);
-          $anchorScroll.yOffset = jqElem;
-        };
-      }
-
-
-      it('should scroll with vertical offset when `top === 0`', inject(
-        createAndSetYOffsetElement({
-          background: 'DarkOrchid',
-          height: '50px',
-          position: 'fixed',
-          top: '0',
-        }),
-        addElements('id=some'),
-        changeHashTo('some'),
-        expectScrollingWithOffset('id=some', 50)));
-
-
-      it('should scroll with vertical offset when `top > 0`', inject(
-        createAndSetYOffsetElement({
-          height: '50px',
-          position: 'fixed',
-          top: '50px',
-        }),
-        addElements('id=some'),
-        changeHashTo('some'),
-        expectScrollingWithOffset('id=some', 100)));
-
-
-      it('should scroll without vertical offset when `position !== fixed`', inject(
-        createAndSetYOffsetElement({
-          height: '50px',
-          position: 'absolute',
-          top: '0',
-        }),
-        addElements('id=some'),
-        changeHashTo('some'),
-        expectScrollingWithoutOffset('id=some')));
     });
   });
 });
