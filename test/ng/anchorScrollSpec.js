@@ -190,12 +190,6 @@ describe('$anchorScroll', function() {
 
   describe('watcher', function() {
 
-    function initAnchorScroll() {
-      return function($rootScope, $anchorScroll) {
-        $rootScope.$digest();
-      };
-    }
-
     function initLocation(config) {
       return function($provide, $locationProvider) {
         $provide.value('$sniffer', {history: config.historyApi});
@@ -220,7 +214,6 @@ describe('$anchorScroll', function() {
       it('should scroll to element when hash change in hashbang mode', function() {
         module(initLocation({html5Mode: false, historyApi: true}));
         inject(
-          initAnchorScroll(),
           addElements('id=some'),
           changeHashTo('some'),
           expectScrollingTo('id=some')
@@ -231,7 +224,6 @@ describe('$anchorScroll', function() {
       it('should scroll to element when hash change in html5 mode with no history api', function() {
         module(initLocation({html5Mode: true, historyApi: false}));
         inject(
-          initAnchorScroll(),
           addElements('id=some'),
           changeHashTo('some'),
           expectScrollingTo('id=some')
@@ -241,7 +233,6 @@ describe('$anchorScroll', function() {
 
       it('should not scroll to the top if $anchorScroll is initializing and location hash is empty',
         inject(
-          initAnchorScroll(),
           expectNoScrolling())
       );
 
@@ -249,7 +240,6 @@ describe('$anchorScroll', function() {
       it('should not scroll when element does not exist', function() {
         module(initLocation({html5Mode: false, historyApi: false}));
         inject(
-          initAnchorScroll(),
           addElements('id=some'),
           changeHashTo('other'),
           expectNoScrolling()
@@ -260,7 +250,6 @@ describe('$anchorScroll', function() {
       it('should scroll when html5 mode with history api', function() {
         module(initLocation({html5Mode: true, historyApi: true}));
         inject(
-          initAnchorScroll(),
           addElements('id=some'),
           changeHashTo('some'),
           expectScrollingTo('id=some')
@@ -302,7 +291,6 @@ describe('$anchorScroll', function() {
       afterEach(unspyOnJQLiteDocumentComplete());
 
       it('should wait for the document to be completely loaded before auto-scrolling', inject(
-          initAnchorScroll(),
           addElements('id=some'),
           changeHashTo('some'),
           expectNoScrolling('id=some'),
