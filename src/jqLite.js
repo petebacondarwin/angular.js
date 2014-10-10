@@ -453,6 +453,17 @@ function jqLiteRemove(element, keepData) {
   if (parent) parent.removeChild(element);
 }
 
+// Note: This is a private method that should not be exposed unto jQLitePrototype
+function jqLiteReadyLoaded(trigger, win) {
+  win = win || window;
+  if (win.document.readyState === 'complete') {
+    trigger();
+  } else {
+    // Note: No need to unregister as `load` fires only once.
+    jqLite(win).on('load', trigger);
+  }
+}
+
 //////////////////////////////////////////
 // Functions which are declared directly.
 //////////////////////////////////////////
