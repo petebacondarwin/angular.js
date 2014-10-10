@@ -233,23 +233,6 @@ function $AnchorScrollProvider() {
       }
     }
 
-    function scrollWhenReady() {
-      if (document.readyState === 'complete') {
-        $rootScope.$evalAsync(scroll);
-      } else if (!scrollScheduled) {
-        scrollScheduled = true;
-        jqLite($window).on('load', function unbindAndScroll() {
-          // When navigating to a page with a URL including a hash,
-          // Firefox overwrites our `yOffset` if `$apply()` is used instead.
-          $rootScope.$evalAsync(function() {
-            scrollScheduled = false;
-            jqLite($window).off('load', unbindAndScroll);
-            scroll();
-          });
-        });
-      }
-    }
-
     function scroll() {
       var hash = $location.hash(), elm;
 
@@ -274,7 +257,9 @@ function $AnchorScrollProvider() {
           // skip the initial scroll if $location.hash is empty
           if (newVal === oldVal && newVal === '') return;
 
-          scrollWhenReady();
+          jqLiteDocumentComplete(function() {
+            $rootScope.$evalAsync(scroll);
+          });
         });
     }
 

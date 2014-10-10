@@ -3,8 +3,26 @@
 describe('$anchorScroll', function() {
 
   var elmSpy;
-  var jqLiteSpies;
-  var windowSpies;
+
+  function createMockWindow() {
+    return function() {
+      module(function($provide) {
+        elmSpy = {};
+
+        var mockedWin = {
+          scrollTo: jasmine.createSpy('$window.scrollTo'),
+          scrollBy: jasmine.createSpy('$window.scrollBy'),
+          document: document,
+          getComputedStyle: function(elem) {
+            return getComputedStyle(elem);
+          }
+        };
+
+        $provide.value('$window', mockedWin);
+      });
+    };
+  }
+
 
   function addElements() {
     var elements = sliceArgs(arguments);
@@ -52,56 +70,6 @@ describe('$anchorScroll', function() {
     };
   }
 
-  function createMockDocument(initialReadyState) {
-    var mockedDoc = {};
-
-    var propsToPassThrough = ['body', 'documentElement'];
-    var methodsToPassThrough = [
-      'getElementById',
-      'getElementsByName'
-    ];
-
-    var document_ = document;
-
-    propsToPassThrough.forEach(function(prop) {
-      mockedDoc[prop] = document_[prop];
-    });
-    methodsToPassThrough.forEach(function(method) {
-      mockedDoc[method] = document_[method].bind(document_);
-    });
-
-    mockedDoc.readyState = initialReadyState || 'complete';
-
-    return mockedDoc;
-  }
-
-  function createMockWindow(initialReadyState) {
-    return function() {
-      module(function($provide) {
-        elmSpy = {};
-        windowSpies = {};
-
-        var mockedWin = {
-          scrollTo: (windowSpies.scrollTo = jasmine.createSpy('$window.scrollTo')),
-          scrollBy: (windowSpies.scrollBy = jasmine.createSpy('$window.scrollBy')),
-          document: createMockDocument(initialReadyState),
-          navigator: {},
-          getComputedStyle: function(elem) {
-            return getComputedStyle(elem);
-          },
-          addEventListener: function(eventType, callback, unsupported) {
-            addEventListener(eventType, callback, unsupported);
-          },
-          removeEventListener: function(eventType, callback, unsupported) {
-            removeEventListener(eventType, callback, unsupported);
-          }
-        };
-
-        $provide.value('$window', mockedWin);
-      });
-    };
-  }
-
   function expectNoScrolling() {
     return expectScrollingTo(NaN);
   }
@@ -135,18 +103,32 @@ describe('$anchorScroll', function() {
     expect($window.scrollTo).toHaveBeenCalledWith(0, 0);
   }
 
-  function resetAllSpies() {
-    function resetSpy(spy) {
-      spy.reset();
-    }
-
-    return function($window) {
-      forEach(elmSpy, resetSpy);
-      forEach(jqLiteSpies, resetSpy);
-      forEach(windowSpies, resetSpy);
+  function spyOnJQLiteDocumentComplete(fake) {
+    return function() {
+      spyOn(window, 'jqLiteDocumentComplete');
+      if (fake) {
+        window.jqLiteDocumentComplete.andCallFake(fake);
+      }
     };
   }
 
+  function unspyOnJQLiteDocumentComplete() {
+    return function() {
+      window.jqLiteDocumentComplete = window.jqLiteDocumentComplete.originalValue;
+    };
+  }
+
+  function simulateDocumentComplete() {
+    return spyOnJQLiteDocumentComplete(function(callback) { callback(); });
+  }
+
+  function simulateWindowLoadEvent() {
+    return function($browser) {
+      var callback = window.jqLiteDocumentComplete.mostRecentCall.args[0];
+      callback();
+      $browser.defer.flush();
+    };
+  }
 
   afterEach(inject(function($browser, $document) {
     expect($browser.deferredFns.length).toBe(0);
@@ -206,122 +188,6 @@ describe('$anchorScroll', function() {
   });
 
 
-  describe('with respect to `document.readyState`', function() {
-
-    function triggerLoadEvent() {
-      return function($browser, $window) {
-        // It is possible that this operation adds tasks to the asyncQueue (needs flushing)
-        $window.document.readyState = 'complete';
-        jqLite($window).triggerHandler('load');
-        if ($browser.deferredFns.length) {
-          $browser.defer.flush();
-        }
-      };
-    }
-
-    function spyOnJQLiteOnOff() {
-      jqLiteSpies = {};
-
-      return function() {
-        jqLiteSpies.on = spyOn(jqLite.prototype,'on').andCallThrough();
-        jqLiteSpies.off = spyOn(jqLite.prototype,'off').andCallThrough();
-      };
-    }
-
-    function unspyOnJQLiteOnOff() {
-      return function() {
-        jqLiteSpies = {};
-        jqLite.prototype.on = jqLite.prototype.on.originalValue;
-        jqLite.prototype.off = jqLite.prototype.off.originalValue;
-      };
-    }
-
-    function expectJQLiteOnOffCallsToEqual(callCount) {
-      return function() {
-        var onCalls = 0, offCalls = 0;
-
-        forEach(jqLite.prototype.on.calls, function(call) {
-          if ( call.args[0] === 'load' ) {
-            onCalls += 1;
-          }
-        });
-
-        forEach(jqLite.prototype.off.calls, function(call) {
-          if ( call.args[0] === 'load' ) {
-            offCalls += 1;
-          }
-        });
-
-        expect(onCalls).toBe(callCount);
-        expect(offCalls).toBe(callCount);
-      };
-    }
-
-    function expectJQLiteOnOffCallsToHaveSameHandler() {
-      return function() {
-        var registeredListener = jqLite.prototype.on.mostRecentCall.args[1];
-        var unregisteredListener = jqLite.prototype.off.mostRecentCall.args[1];
-        expect(unregisteredListener).toBe(registeredListener);
-      };
-    }
-
-    beforeEach(createMockWindow('interactive'));
-
-
-    it('should wait for the `load` event', inject(
-      addElements('id=some1'),
-
-      changeHashTo('some1'),
-      expectNoScrolling(),
-
-      triggerLoadEvent(),
-      expectScrollingTo('id=some1')));
-
-
-    it('should only register one listener while `readyState !== "complete"`', inject(
-      addElements('id=some1', 'id=some2'),
-
-      changeHashTo('some1'),
-      changeHashTo('some2'),
-      expectNoScrolling(),
-
-      triggerLoadEvent(),
-      expectScrollingTo('id=some2')));
-
-
-    it('should properly register and unregister listeners for the `load` event', function() {
-      module(spyOnJQLiteOnOff());
-      inject(
-        addElements('id=some1', 'id=some2'),
-
-        changeHashTo('some1'),
-        changeHashTo('some2'),
-
-        triggerLoadEvent(),
-
-        expectJQLiteOnOffCallsToEqual(1),
-        expectJQLiteOnOffCallsToHaveSameHandler(),
-        unspyOnJQLiteOnOff()
-      );
-    });
-
-
-    it('should scroll immediately if already `readyState === "complete"`', function() {
-      module(spyOnJQLiteOnOff());
-      inject(
-        addElements('id=some1'),
-
-        triggerLoadEvent(),
-        changeHashTo('some1'),
-
-        expectScrollingTo('id=some1'),
-        expectJQLiteOnOffCallsToEqual(0),
-        unspyOnJQLiteOnOff()
-      );
-    });
-  });
-
-
   describe('watcher', function() {
 
     function initAnchorScroll() {
@@ -343,90 +209,116 @@ describe('$anchorScroll', function() {
       };
     }
 
+
     beforeEach(createMockWindow());
 
+    describe('when document has completed loading', function() {
 
-    it('should scroll to element when hash change in hashbang mode', function() {
-      module(initLocation({html5Mode: false, historyApi: true}));
-      inject(
-        initAnchorScroll(),
-        addElements('id=some'),
-        changeHashTo('some'),
-        expectScrollingTo('id=some')
+      beforeEach(simulateDocumentComplete());
+      afterEach(unspyOnJQLiteDocumentComplete());
+
+      it('should scroll to element when hash change in hashbang mode', function() {
+        module(initLocation({html5Mode: false, historyApi: true}));
+        inject(
+          initAnchorScroll(),
+          addElements('id=some'),
+          changeHashTo('some'),
+          expectScrollingTo('id=some')
+        );
+      });
+
+
+      it('should scroll to element when hash change in html5 mode with no history api', function() {
+        module(initLocation({html5Mode: true, historyApi: false}));
+        inject(
+          initAnchorScroll(),
+          addElements('id=some'),
+          changeHashTo('some'),
+          expectScrollingTo('id=some')
+        );
+      });
+
+
+      it('should not scroll to the top if $anchorScroll is initializing and location hash is empty',
+        inject(
+          initAnchorScroll(),
+          expectNoScrolling())
       );
+
+
+      it('should not scroll when element does not exist', function() {
+        module(initLocation({html5Mode: false, historyApi: false}));
+        inject(
+          initAnchorScroll(),
+          addElements('id=some'),
+          changeHashTo('other'),
+          expectNoScrolling()
+        );
+      });
+
+
+      it('should scroll when html5 mode with history api', function() {
+        module(initLocation({html5Mode: true, historyApi: true}));
+        inject(
+          initAnchorScroll(),
+          addElements('id=some'),
+          changeHashTo('some'),
+          expectScrollingTo('id=some')
+        );
+      });
+
+
+      it('should not scroll when auto-scrolling is disabled', function() {
+        module(
+            disableAutoScrolling(),
+            initLocation({html5Mode: false, historyApi: false})
+        );
+        inject(
+          addElements('id=fake'),
+          changeHashTo('fake'),
+          expectNoScrolling()
+        );
+      });
+
+
+      it('should scroll when called explicitly (even if auto-scrolling is disabled)', function() {
+        module(
+            disableAutoScrolling(),
+            initLocation({html5Mode: false, historyApi: false})
+        );
+        inject(
+          addElements('id=fake'),
+          changeHashTo('fake'),
+          expectNoScrolling(),
+          callAnchorScroll(),
+          expectScrollingTo('id=fake')
+        );
+      });
     });
 
+    describe('when document has not completed loading', function() {
 
-    it('should scroll to element when hash change in html5 mode with no history api', function() {
-      module(initLocation({html5Mode: true, historyApi: false}));
-      inject(
-        initAnchorScroll(),
-        addElements('id=some'),
-        changeHashTo('some'),
-        expectScrollingTo('id=some')
-      );
+      beforeEach(spyOnJQLiteDocumentComplete());
+      afterEach(unspyOnJQLiteDocumentComplete());
+
+      it('should wait for the document to be completely loaded before auto-scrolling', inject(
+          initAnchorScroll(),
+          addElements('id=some'),
+          changeHashTo('some'),
+          expectNoScrolling('id=some'),
+          simulateWindowLoadEvent(),
+          expectScrollingTo('id=some')
+      ));
+
     });
 
-
-    it('should not scroll to the top if $anchorScroll is initializing and location hash is empty',
-      inject(
-        initAnchorScroll(),
-        expectNoScrolling())
-    );
-
-
-    it('should not scroll when element does not exist', function() {
-      module(initLocation({html5Mode: false, historyApi: false}));
-      inject(
-        initAnchorScroll(),
-        addElements('id=some'),
-        changeHashTo('other'),
-        expectNoScrolling()
-      );
-    });
-
-
-    it('should scroll when html5 mode with history api', function() {
-      module(initLocation({html5Mode: true, historyApi: true}));
-      inject(
-        initAnchorScroll(),
-        addElements('id=some'),
-        changeHashTo('some'),
-        expectScrollingTo('id=some')
-      );
-    });
-
-
-    it('should not scroll when auto-scrolling is disabled', function() {
-      module(
-          disableAutoScrolling(),
-          initLocation({html5Mode: false, historyApi: false})
-      );
-      inject(
-        addElements('id=fake'),
-        changeHashTo('fake'),
-        expectNoScrolling()
-      );
-    });
-
-
-    it('should scroll when called explicitly (even if auto-scrolling is disabled)', function() {
-      module(
-          disableAutoScrolling(),
-          initLocation({html5Mode: false, historyApi: false})
-      );
-      inject(
-        addElements('id=fake'),
-        changeHashTo('fake'),
-        expectNoScrolling(),
-        callAnchorScroll(),
-        expectScrollingTo('id=fake')
-      );
-    });
   });
 
 
   describe('yOffset', function() {
+
+    beforeEach(simulateDocumentComplete());
+    afterEach(unspyOnJQLiteDocumentComplete);
 
     function expectScrollingWithOffset(identifierCountMap, offsetList) {
       var list = isArray(offsetList) ? offsetList : [offsetList];
@@ -485,7 +377,8 @@ describe('$anchorScroll', function() {
           addElements('id=some'),
           mockBoundingClientRect({0: [0]}),
           changeHashTo('some'),
-          expectScrollingWithOffset('id=some', yOffsetNumber)));
+          expectScrollingWithOffset('id=some', yOffsetNumber)
+        ));
 
 
         it('should use the correct vertical offset when changing `yOffset` at runtime', inject(
