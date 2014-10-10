@@ -265,6 +265,9 @@ describe('$anchorScroll', function() {
             offCalls += 1;
           }
         });
+
+        expect(onCalls).toEqual(callCount);
+        expect(offCalls).toEqual(callCount);
       };
     }
 
