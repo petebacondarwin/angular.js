@@ -57,8 +57,8 @@ function $AnchorScrollProvider() {
    * - **number**: A fixed number of pixels to be used as offset.<br /><br />
    * - **function**: A getter function called everytime `$anchorScroll()` is executed. Must return
    *   a number representing the offset (in pixels).<br /><br />
-   * - **jqLite**: A jqLite/jQuery element to be used for specifying the offset. The sum of the
-   *   element's height and its distance from the top of the page will be used as offset.<br />
+   * - **jqLite**: A jqLite/jQuery element to be used for specifying the offset. The distance from
+   *   the top of the page to the element's bottom will be used as offset.<br />
    *   **Note**: The element will be taken into account only as long as its `position` is set to
    *   `fixed`. This option is useful, when dealing with responsive navbars/headers that adjust
    *   their height and/or positioning according to the viewport's size.
@@ -196,10 +196,7 @@ function $AnchorScrollProvider() {
         if (style.position !== 'fixed') {
           offset = 0;
         } else {
-          var rect = elem.getBoundingClientRect();
-          var top = rect.top;
-          var height = rect.height;
-          offset = top + height;
+          offset = elem.getBoundingClientRect().bottom;
         }
       } else if (!isNumber(offset)) {
         offset = 0;
@@ -223,10 +220,10 @@ function $AnchorScrollProvider() {
           // often the case for elements near the bottom of the page.
           // In such cases we do not need to scroll the whole `offset` up, just the fraction of the
           // offset that is necessary to align the top of `elem` at the desired position.
-          var elemTop = elem.getBoundingClientRect().top;
-          var bodyTop = document.body.getBoundingClientRect().top;
-          var scrollTop = $window.pageYOffset;
-          var necessaryOffset = offset - (elemTop - (bodyTop + scrollTop));
+          // ---
+          // Note: getBoundingClientRect()'s top is relative to the top of the viewport
+          //       (not the page), which is exactly what interests us.
+          var necessaryOffset = offset - elem.getBoundingClientRect().top;
 
           $window.scrollBy(0, -1 * necessaryOffset);
         }
