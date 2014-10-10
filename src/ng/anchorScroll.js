@@ -237,15 +237,13 @@ function $AnchorScrollProvider() {
         $rootScope.$evalAsync(scroll);
       } else if (!scrollScheduled) {
         scrollScheduled = true;
-        document.addEventListener('readystatechange', function unbindAndScroll() {
+        angular.element($window).on('load', function unbindAndScroll() {
           // When navigating to a page with a URL including a hash,
           // Firefox overwrites our `yOffset` if `$apply()` is used instead.
           $rootScope.$evalAsync(function() {
-            if (document.readyState === 'complete') {
-              scrollScheduled = false;
-              document.removeEventListener('readystatechange', unbindAndScroll);
-              scroll();
-            }
+            scrollScheduled = false;
+            angular.element($window).off('load', unbindAndScroll);
+            scroll();
           });
         });
       }
