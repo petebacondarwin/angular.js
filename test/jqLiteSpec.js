@@ -1993,4 +1993,66 @@ describe('jqLite', function() {
     });
   });
 
+
+  describe('jqLiteReadyLoaded', function() {
+    /* global jqLiteReadyLoaded: false */
+    var onLoadCallback = jasmine.createSpy('onLoadCallback');
+    var fakeWin;
+
+    function createFakeWin() {
+      fakeWin = {
+        document: {readyState: 'loading'},
+        addEventListener: jasmine.createSpy('fakeWinAddEventListener')
+      };
+    }
+
+    function spyOnJQLiteOn() {
+      spyOn(jqLite.prototype, 'on').andCallThrough();
+    }
+
+    function unspyOnJQLiteOn() {
+      jqLite.prototype.on = jqLite.prototype.on.originalValue;
+    }
+
+    function expectJQLiteOnCallsCount(callCount) {
+      expect(jqLite.prototype.on.calls.length).toBe(callCount);
+    }
+
+
+    beforeEach(function() {
+      onLoadCallback.reset();
+      createFakeWin();
+      spyOnJQLiteOn();
+    });
+
+    afterEach(function() {
+      unspyOnJQLiteOn();
+      fakeWin = null;
+    });
+
+
+    it('should immediatelly execute the callback if the document has already loaded', function() {
+      fakeWin.document.readyState = 'complete';
+      jqLiteReadyLoaded(onLoadCallback, fakeWin);
+      expectJQLiteOnCallsCount(0);
+      expect(fakeWin.addEventListener).not.toHaveBeenCalled();
+      expect(onLoadCallback).toHaveBeenCalledOnce();
+    });
+
+
+    it('should register a listener for the `load` event', function() {
+      jqLiteReadyLoaded(onLoadCallback, fakeWin);
+      expectJQLiteOnCallsCount(1);
+      expect(fakeWin.addEventListener).toHaveBeenCalledOnce();
+      expect(onLoadCallback).not.toHaveBeenCalled();
+    });
+
+
+    it('should execute the callback once the `load` event fires', function() {
+      jqLiteReadyLoaded(onLoadCallback, fakeWin);
+      expect(onLoadCallback).not.toHaveBeenCalled();
+      jqLite(fakeWin).triggerHandler('load');
+      expect(onLoadCallback).toHaveBeenCalledOnce();
+    });
+  });
 });
