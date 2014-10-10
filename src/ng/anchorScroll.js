@@ -212,20 +212,21 @@ function $AnchorScrollProvider() {
         var offset = getYOffset();
 
         if (offset) {
-          // `offset` is the number of pixels we should scroll up in order to align `elem` properly.
+          // `offset` is the number of pixels we should scroll UP in order to align `elem` properly.
           // This is true ONLY if the call to `elem.scrollIntoView()` initially aligns `elem` at the
-          // top of the viewport. IF the number of pixels from the top of `elem` to the end of the
-          // page's content is less than the height of the viewport, then `elem.scrollIntoView()`
-          // will NOT align the top of `elem` at the top of the viewport (but further down). This is
-          // often the case for elements near the bottom of the page.
-          // In such cases we do not need to scroll the whole `offset` up, just the fraction of the
-          // offset that is necessary to align the top of `elem` at the desired position.
-          // ---
-          // Note: getBoundingClientRect()'s top is relative to the top of the viewport
-          //       (not the page), which is exactly what interests us.
-          var necessaryOffset = offset - elem.getBoundingClientRect().top;
-
-          $window.scrollBy(0, -1 * necessaryOffset);
+          // top of the viewport.
+          //
+          // IF the number of pixels from the top of `elem` to the end of the page's content is less
+          // than the height of the viewport, then `elem.scrollIntoView()` will align the `elem` some
+          // way down the page.
+          //
+          // This is often the case for elements near the bottom of the page.
+          //
+          // In such cases we do not need to scroll the whole `offset` up, just the difference between
+          // the top of the element and the offset, which is enough to align the top of `elem` at the
+          // desired position.
+          var elemTop = elem.getBoundingClientRect().top;
+          $window.scrollBy(0, elemTop - offset);
         }
       } else {
         $window.scrollTo(0, 0);
@@ -237,12 +238,12 @@ function $AnchorScrollProvider() {
         $rootScope.$evalAsync(scroll);
       } else if (!scrollScheduled) {
         scrollScheduled = true;
-        angular.element($window).on('load', function unbindAndScroll() {
+        jqLite($window).on('load', function unbindAndScroll() {
           // When navigating to a page with a URL including a hash,
           // Firefox overwrites our `yOffset` if `$apply()` is used instead.
           $rootScope.$evalAsync(function() {
             scrollScheduled = false;
-            angular.element($window).off('load', unbindAndScroll);
+            jqLite($window).off('load', unbindAndScroll);
             scroll();
           });
         });

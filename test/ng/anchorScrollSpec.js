@@ -235,6 +235,47 @@ describe('$anchorScroll', function() {
       };
     }
 
+
+    function spyOnJQLiteOnOff() {
+      return function() {
+        spyOn(jqLite.prototype,'on').andCallThrough();
+        spyOn(jqLite.prototype,'off').andCallThrough();
+      };
+    }
+
+    function unspyOnJQLiteOnOff() {
+      return function() {
+        jqLite.prototype.on = jqLite.prototype.on.originalValue;
+        jqLite.prototype.off = jqLite.prototype.off.originalValue;
+      };
+    }
+
+    function expectJQLiteOnOffCallsToEqual(callCount) {
+      return function() {
+        var onCalls = 0, offCalls = 0;
+
+        forEach(jqLite.prototype.on.calls, function(call) {
+          if ( call.args[0] === 'load' ) {
+            onCalls += 1;
+          }
+        });
+
+        forEach(jqLite.prototype.off.calls, function(call) {
+          if ( call.args[0] === 'load' ) {
+            offCalls += 1;
+          }
+        });
+      };
+    }
+
+    function expectJQLiteOnOffCallsToHaveSameHandler() {
+      return function() {
+        var registeredListener = jqLite.prototype.on.mostRecentCall.args[1];
+        var unregisteredListener = jqLite.prototype.off.mostRecentCall.args[1];
+        expect(unregisteredListener).toBe(registeredListener);
+      };
+    }
+
     beforeEach(createMockWindow('interactive'));
 
 
@@ -259,26 +300,21 @@ describe('$anchorScroll', function() {
       expectScrollingTo('id=some2')));
 
 
-    it('should properly register and unregister listeners for the `load` event', inject(
-      addElements('id=some1', 'id=some2'),
+    it('should properly register and unregister listeners for the `load` event', function() {
+      module(spyOnJQLiteOnOff());
+      inject(
+        addElements('id=some1', 'id=some2'),
 
-      changeHashTo('some1'),
-      changeHashTo('some2'),
-      triggerLoadEvent(),
+        changeHashTo('some1'),
+        changeHashTo('some2'),
 
-      function() {
-        expect(windowSpies.addEventListener.callCount).toBe(1);
-        expect(windowSpies.addEventListener).
-            toHaveBeenCalledWith('load', jasmine.any(Function), false);
+        triggerLoadEvent(),
 
-        expect(windowSpies.removeEventListener.callCount).toBe(1);
-        expect(windowSpies.removeEventListener).
-            toHaveBeenCalledWith('load', jasmine.any(Function), false);
-
-        var registeredListener = windowSpies.addEventListener.calls[0].args[1];
-        var unregisteredListener = windowSpies.removeEventListener.calls[0].args[1];
-        expect(unregisteredListener).toBe(registeredListener);
-      }));
+        expectJQLiteOnOffCallsToEqual(1),
+        expectJQLiteOnOffCallsToHaveSameHandler(),
+        unspyOnJQLiteOnOff()
+      );
+    });
 
 
     it('should scroll immediately if already `readyState === "complete"`', inject(
