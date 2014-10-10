@@ -3,7 +3,7 @@
 describe('$anchorScroll', function() {
 
   var elmSpy;
-  var docSpies;
+  var jqLiteSpies;
   var windowSpies;
 
   function addElements() {
@@ -54,14 +54,11 @@ describe('$anchorScroll', function() {
 
   function createMockDocument(initialReadyState) {
     var mockedDoc = {};
-    docSpies = {};
 
     var propsToPassThrough = ['body', 'documentElement'];
     var methodsToPassThrough = [
       'getElementById',
-      'getElementsByName',
-      'addEventListener',
-      'removeEventListener'
+      'getElementsByName'
     ];
 
     var document_ = document;
@@ -71,19 +68,9 @@ describe('$anchorScroll', function() {
     });
     methodsToPassThrough.forEach(function(method) {
       mockedDoc[method] = document_[method].bind(document_);
-      docSpies[method] = spyOn(mockedDoc, method).andCallThrough();
     });
 
     mockedDoc.readyState = initialReadyState || 'complete';
-    mockedDoc.dispatchFakeReadyStateChangeEvent = function() {
-      var evt = document_.createEvent('Event');
-      evt.initEvent('readystatechange', false, false);
-      document_.dispatchEvent(evt);
-    };
-    mockedDoc.updateReadyState = function(newState) {
-      this.readyState = newState;
-      this.dispatchFakeReadyStateChangeEvent();
-    };
 
     return mockedDoc;
   }
@@ -103,15 +90,12 @@ describe('$anchorScroll', function() {
             return getComputedStyle(elem);
           },
           addEventListener: function(eventType, callback, unsupported) {
-            window.addEventListener(eventType, callback, unsupported);
+            addEventListener(eventType, callback, unsupported);
           },
           removeEventListener: function(eventType, callback, unsupported) {
-            window.removeEventListener(eventType, callback, unsupported);
+            removeEventListener(eventType, callback, unsupported);
           }
         };
-
-        windowSpies.addEventListener = spyOn(mockedWin, 'addEventListener').andCallThrough();
-        windowSpies.removeEventListener = spyOn(mockedWin, 'removeEventListener').andCallThrough();
 
         $provide.value('$window', mockedWin);
       });
@@ -158,7 +142,7 @@ describe('$anchorScroll', function() {
 
     return function($window) {
       forEach(elmSpy, resetSpy);
-      forEach(docSpies, resetSpy);
+      forEach(jqLiteSpies, resetSpy);
       forEach(windowSpies, resetSpy);
     };
   }
@@ -235,16 +219,18 @@ describe('$anchorScroll', function() {
       };
     }
 
-
     function spyOnJQLiteOnOff() {
+      jqLiteSpies = {};
+
       return function() {
-        spyOn(jqLite.prototype,'on').andCallThrough();
-        spyOn(jqLite.prototype,'off').andCallThrough();
+        jqLiteSpies.on = spyOn(jqLite.prototype,'on').andCallThrough();
+        jqLiteSpies.off = spyOn(jqLite.prototype,'off').andCallThrough();
       };
     }
 
     function unspyOnJQLiteOnOff() {
       return function() {
+        jqLiteSpies = {};
         jqLite.prototype.on = jqLite.prototype.on.originalValue;
         jqLite.prototype.off = jqLite.prototype.off.originalValue;
       };
@@ -266,8 +252,8 @@ describe('$anchorScroll', function() {
           }
         });
 
-        expect(onCalls).toEqual(callCount);
-        expect(offCalls).toEqual(callCount);
+        expect(onCalls).toBe(callCount);
+        expect(offCalls).toBe(callCount);
       };
     }
 
@@ -320,17 +306,19 @@ describe('$anchorScroll', function() {
     });
 
 
-    it('should scroll immediately if already `readyState === "complete"`', inject(
-      addElements('id=some1'),
+    it('should scroll immediately if already `readyState === "complete"`', function() {
+      module(spyOnJQLiteOnOff());
+      inject(
+        addElements('id=some1'),
 
-      triggerLoadEvent(),
-      changeHashTo('some1'),
+        triggerLoadEvent(),
+        changeHashTo('some1'),
 
-      expectScrollingTo('id=some1'),
-      function() {
-        expect(windowSpies.addEventListener.callCount).toBe(0);
-        expect(windowSpies.removeEventListener.callCount).toBe(0);
-      }));
+        expectScrollingTo('id=some1'),
+        expectJQLiteOnOffCallsToEqual(0),
+        unspyOnJQLiteOnOff()
+      );
+    });
   });
 
 
