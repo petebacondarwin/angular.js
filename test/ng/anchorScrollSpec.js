@@ -94,15 +94,26 @@ describe('$anchorScroll', function() {
         elmSpy = {};
         windowSpies = {};
 
-        $provide.value('$window', {
+        var mockedWin = {
           scrollTo: (windowSpies.scrollTo = jasmine.createSpy('$window.scrollTo')),
           scrollBy: (windowSpies.scrollBy = jasmine.createSpy('$window.scrollBy')),
           document: createMockDocument(initialReadyState),
           navigator: {},
           getComputedStyle: function(elem) {
             return getComputedStyle(elem);
+          },
+          addEventListener: function(eventType, callback, unsupported) {
+            window.addEventListener(eventType, callback, unsupported);
+          },
+          removeEventListener: function(eventType, callback, unsupported) {
+            window.removeEventListener(eventType, callback, unsupported);
           }
-        });
+        };
+
+        windowSpies.addEventListener = spyOn(mockedWin, 'addEventListener').andCallThrough();
+        windowSpies.removeEventListener = spyOn(mockedWin, 'removeEventListener').andCallThrough();
+
+        $provide.value('$window', mockedWin);
       });
     };
   }
@@ -149,16 +160,6 @@ describe('$anchorScroll', function() {
       forEach(elmSpy, resetSpy);
       forEach(docSpies, resetSpy);
       forEach(windowSpies, resetSpy);
-    };
-  }
-
-  function updateMockReadyState(newState) {
-    return function($browser, $window) {
-      // It is possible that this operation adds tasks to the asyncQueue (needs flushing)
-      $window.document.updateReadyState(newState);
-      if ($browser.deferredFns.length) {
-        $browser.defer.flush();
-      }
     };
   }
 
@@ -223,57 +224,59 @@ describe('$anchorScroll', function() {
 
   describe('with respect to `document.readyState`', function() {
 
+    function triggerLoadEvent() {
+      return function($browser, $window) {
+        // It is possible that this operation adds tasks to the asyncQueue (needs flushing)
+        $window.document.readyState = 'complete';
+        jqLite($window).triggerHandler('load');
+        if ($browser.deferredFns.length) {
+          $browser.defer.flush();
+        }
+      };
+    }
+
     beforeEach(createMockWindow('interactive'));
 
 
-    it('should wait for `document.readyState === "complete"', inject(
+    it('should wait for the `load` event', inject(
       addElements('id=some1'),
 
       changeHashTo('some1'),
       expectNoScrolling(),
 
-      updateMockReadyState('some-arbitrary-state'),
-      expectNoScrolling(),
-
-      updateMockReadyState('complete'),
+      triggerLoadEvent(),
       expectScrollingTo('id=some1')));
 
 
-    it('should only register once for execution when `document.readyState === "complete"', inject(
+    it('should only register one listener while `readyState !== "complete"`', inject(
       addElements('id=some1', 'id=some2'),
 
-      changeHashTo('some1'),
-      changeHashTo('some2'),
-      updateMockReadyState('some-other-arbitrary-state'),
       changeHashTo('some1'),
       changeHashTo('some2'),
       expectNoScrolling(),
 
-      updateMockReadyState('complete'),
+      triggerLoadEvent(),
       expectScrollingTo('id=some2')));
 
 
-    it('should properly register and unregister listeners for `readystatechange` event', inject(
+    it('should properly register and unregister listeners for the `load` event', inject(
       addElements('id=some1', 'id=some2'),
 
       changeHashTo('some1'),
       changeHashTo('some2'),
-      updateMockReadyState('some-other-arbitrary-state'),
-      changeHashTo('some1'),
-      changeHashTo('some2'),
-      updateMockReadyState('complete'),
+      triggerLoadEvent(),
 
       function() {
-        expect(docSpies.addEventListener.callCount).toBe(1);
-        expect(docSpies.addEventListener).
-            toHaveBeenCalledWith('readystatechange', jasmine.any(Function));
+        expect(windowSpies.addEventListener.callCount).toBe(1);
+        expect(windowSpies.addEventListener).
+            toHaveBeenCalledWith('load', jasmine.any(Function), false);
 
-        expect(docSpies.removeEventListener.callCount).toBe(1);
-        expect(docSpies.removeEventListener).
-            toHaveBeenCalledWith('readystatechange', jasmine.any(Function));
+        expect(windowSpies.removeEventListener.callCount).toBe(1);
+        expect(windowSpies.removeEventListener).
+            toHaveBeenCalledWith('load', jasmine.any(Function), false);
 
-        var registeredListener = docSpies.addEventListener.calls[0].args[1];
-        var unregisteredListener = docSpies.removeEventListener.calls[0].args[1];
+        var registeredListener = windowSpies.addEventListener.calls[0].args[1];
+        var unregisteredListener = windowSpies.removeEventListener.calls[0].args[1];
         expect(unregisteredListener).toBe(registeredListener);
       }));
 
@@ -281,13 +284,13 @@ describe('$anchorScroll', function() {
     it('should scroll immediately if already `readyState === "complete"`', inject(
       addElements('id=some1'),
 
-      updateMockReadyState('complete'),
+      triggerLoadEvent(),
       changeHashTo('some1'),
 
       expectScrollingTo('id=some1'),
       function() {
-        expect(docSpies.addEventListener.callCount).toBe(0);
-        expect(docSpies.removeEventListener.callCount).toBe(0);
+        expect(windowSpies.addEventListener.callCount).toBe(0);
+        expect(windowSpies.removeEventListener.callCount).toBe(0);
       }));
   });
 
