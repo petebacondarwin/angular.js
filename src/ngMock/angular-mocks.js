@@ -2130,12 +2130,12 @@ if (window.jasmine || window.mocha) {
         return !!currentSpec;
       };
 
-  var hookedAnnotate = angular.injector.$$annotate;
+  angular.mock.$$annotate = angular.injector.$$annotate;
   angular.injector.$$annotate = function(fn) {
     if (typeof fn === 'function' && !fn.$inject) {
       annotatedFunctions.push(fn);
     }
-    return hookedAnnotate.apply(this, arguments);
+    return angular.mock.$$annotate.apply(this, arguments);
   };
 
 

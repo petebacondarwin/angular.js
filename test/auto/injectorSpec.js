@@ -220,9 +220,11 @@ describe('injector', function() {
 
 
     it('should publish annotate API', function() {
+      expect(angular.mock.$$annotate).toBe(annotate);
+      spyOn(angular.mock, '$$annotate').andCallThrough();
       function fn() {}
-      expect(injector.annotate(fn)).toEqual([]);
-      expect(fn.$inject).toEqual([]);
+      injector.annotate(fn);
+      expect(angular.mock.$$annotate).toHaveBeenCalledWith(fn);
     });
   });
 
