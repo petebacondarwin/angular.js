@@ -137,6 +137,7 @@ function $RootScopeProvider() {
       this.$$listenerCount = {};
       this.$$watchersCount = 0;
       this.$$isolateBindings = null;
+      this.$$dirty = false;
     }
 
     /**
@@ -202,6 +203,7 @@ function $RootScopeProvider() {
         if (isolate) {
           child = new Scope();
           child.$root = this.$root;
+          child.$$dirty = true;
         } else {
           // Only create a child scope class if somebody asks for one,
           // but cache it to allow the VM to optimize lookups.
@@ -240,6 +242,13 @@ function $RootScopeProvider() {
         function destroyChild() {
           child.$$destroyed = true;
         }
+      },
+
+      $setDirty: function() {
+        if (!this.hasOwnProperty("$$isolateBindings"))
+          throw 'Must be isolated scope.';
+
+        this.$$dirty = true;
       },
 
       /**
@@ -726,6 +735,7 @@ function $RootScopeProvider() {
             next, current, target = this,
             watchLog = [],
             logIdx, logMsg, asyncTask;
+        this.$$dirty = true;
 
         beginPhase('$digest');
         // Check for changes to browser url that happened in sync before the call to $digest
@@ -756,7 +766,9 @@ function $RootScopeProvider() {
 
           traverseScopesLoop:
           do { // "traverse the scopes" loop
-            if ((watchers = current.$$watchers)) {
+            var skip = current.$$isolateBindings && !current.$$dirty && !current.$$transcluded;
+            current.$$dirty = false;
+            if (!skip && (watchers = current.$$watchers)) {
               // process our watches
               length = watchers.length;
               while (length--) {
@@ -1037,6 +1049,7 @@ function $RootScopeProvider() {
         } finally {
           clearPhase();
           try {
+            this.$$dirty = true;
             $rootScope.$digest();
           } catch (e) {
             $exceptionHandler(e);
@@ -1069,6 +1082,7 @@ function $RootScopeProvider() {
 
         function $applyAsyncExpression() {
           scope.$eval(expr);
+          scope.$$dirty = true;
         }
       },
 

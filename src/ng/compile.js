@@ -2524,6 +2524,7 @@ function $CompileProvider($provide, $$sanitizeUriProvider) {
           case '@':
             attrs.$observe(attrName, function(value) {
               destination[scopeName] = value;
+              newScope && newScope.$setDirty();
             });
             attrs.$$observers[attrName].$$scope = scope;
             if (attrs[attrName]) {
@@ -2557,6 +2558,7 @@ function $CompileProvider($provide, $$sanitizeUriProvider) {
                 if (!compare(parentValue, lastValue)) {
                   // parent changed and it has precedence
                   destination[scopeName] = parentValue;
+                  newScope && newScope.$setDirty();
                 } else {
                   // if the parent can be assigned then do so
                   parentSet(scope, parentValue = destination[scopeName]);
