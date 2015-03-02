@@ -1,13 +1,14 @@
 <!DOCTYPE html>
-<html ng-app="test" ng-jq="jQuery_2_0_0">
+<html ng-app="test" ng-jq="jQuery_2_1_0">
 
-<script src="http://ajax.googleapis.com/ajax/libs/jquery/2.0.0/jquery.min.js"></script>
-<script>
-  var jQuery_2_0_0 = $.noConflict(true);
-</script>
-<script src="../../../../bower_components/jquery/dist/jquery.js"></script>
-<script src="angular.js"></script>
-<script>
-  angular.module('test', []);
-</script>
+    <jquery-version>{{jqueryVersion}}</jquery-version>
+
+    <script src="../../../../bower_components/jquery/dist/jquery.js"></script>
+    <script src="jquery2.1.0.min.js"></script>
+    <!-- <script src="http://ajax.googleapis.com/ajax/libs/jquery/2.1.0/jquery.min.js"></script> -->
+    <script>
+      var jQuery_2_1_0 = jQuery.noConflict();
+    </script>
+    <script src="angular.js"></script>
+    <script type="text/javascript" src="script.js"></script>
 </html>
