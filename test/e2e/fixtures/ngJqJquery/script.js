@@ -1,6 +1,11 @@
 'use strict';
 
 angular.module('test', [])
+
+  .run(function($rootScope) {
+    $rootScope.jqueryVersion = window.angular.element().jquery || 'jqLite';
+  })
+
   .directive('jqueryVersion', function() {
     return {
       link: function(scope) {
