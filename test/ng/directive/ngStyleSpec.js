@@ -25,7 +25,9 @@ describe('ngStyle', function() {
 
   it('should support lazy one-time binding for object literals', inject(function($rootScope, $compile) {
     element = $compile('<div ng-style="::{height: heightStr}"></div>')($rootScope);
+    console.log(element.css('height'));
     $rootScope.$digest();
+    console.log(element.css('height'));
     expect(element.css('height')).toBeFalsy();
     $rootScope.$apply('heightStr = "40px"');
     expect(element.css('height')).toBe('40px');
