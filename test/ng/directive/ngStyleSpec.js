@@ -26,10 +26,10 @@ describe('ngStyle', function() {
   it('should support lazy one-time binding for object literals', inject(function($rootScope, $compile, $log) {
     /* global console */
     element = $compile('<div ng-style="::{height: heightStr}"></div>')($rootScope);
-    console.log(element.css('height'));
+    console.log(element.css('height').replace('px', ''));
     $rootScope.$digest();
-    console.log(element.css('height'));
-    expect(element.css('height')).toBeFalsy();
+    console.log(element.css('height').replace('px', ''));
+    expect(element.css('height').replace('px', '')).toBeFalsy();
     $rootScope.$apply('heightStr = "40px"');
     expect(element.css('height')).toBe('40px');
   }));
