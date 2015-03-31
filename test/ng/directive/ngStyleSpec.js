@@ -23,7 +23,8 @@ describe('ngStyle', function() {
   }));
 
 
-  it('should support lazy one-time binding for object literals', inject(function($rootScope, $compile) {
+  it('should support lazy one-time binding for object literals', inject(function($rootScope, $compile, $log) {
+    /* global console */
     element = $compile('<div ng-style="::{height: heightStr}"></div>')($rootScope);
     console.log(element.css('height'));
     $rootScope.$digest();
