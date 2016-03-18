@@ -48,13 +48,7 @@ function MockWindow(options) {
 
   this.fire = function(name) {
     forEach(events[name], function(fn) {
-      // type/target to make jQuery happy
-      fn({
-        type: name,
-        target: {
-          nodeType: 1
-        }
-      });
+      fn({type: name}); // type to make jQuery happy
     });
   };
 
@@ -291,7 +285,7 @@ describe('browser', function() {
       browser.url('http://new.org');
 
       expect(pushState).toHaveBeenCalledOnce();
-      expect(pushState.calls.argsFor(0)[2]).toEqual('http://new.org');
+      expect(pushState.argsForCall[0][2]).toEqual('http://new.org');
 
       expect(replaceState).not.toHaveBeenCalled();
       expect(locationReplace).not.toHaveBeenCalled();
@@ -303,7 +297,7 @@ describe('browser', function() {
       browser.url('http://new.org', true);
 
       expect(replaceState).toHaveBeenCalledOnce();
-      expect(replaceState.calls.argsFor(0)[2]).toEqual('http://new.org');
+      expect(replaceState.argsForCall[0][2]).toEqual('http://new.org');
 
       expect(pushState).not.toHaveBeenCalled();
       expect(locationReplace).not.toHaveBeenCalled();
@@ -404,7 +398,7 @@ describe('browser', function() {
       expect(fakeWindow.location.href).toBe('http://server/someOtherUrl');
     });
 
-    it('assumes that changes to location.hash occur in sync', function(done) {
+    it('assumes that changes to location.hash occur in sync', function() {
       // This is an asynchronous integration test that changes the
       // hash in all possible ways and checks
       // - whether the change to the hash can be read out in sync
@@ -413,8 +407,7 @@ describe('browser', function() {
           $realWin = jqLite(realWin),
           hashInHashChangeEvent = [];
 
-      var job = createAsync(done);
-      job.runs(function() {
+      runs(function() {
         $realWin.on('hashchange', hashListener);
 
         realWin.location.hash = '1';
@@ -423,18 +416,17 @@ describe('browser', function() {
         realWin.location.assign(realWin.location.href + '4');
 
         expect(realWin.location.hash).toBe('#1234');
-      })
-      .waitsFor(function() {
+      });
+      waitsFor(function() {
         return hashInHashChangeEvent.length > 3;
-      })
-      .runs(function() {
+      });
+      runs(function() {
         $realWin.off('hashchange', hashListener);
 
         forEach(hashInHashChangeEvent, function(hash) {
           expect(hash).toBe('#1234');
         });
-      }).done();
-      job.start();
+      });
 
       function hashListener() {
         hashInHashChangeEvent.push(realWin.location.hash);
@@ -459,9 +451,9 @@ describe('browser', function() {
 
           fakeWindow = new MockWindow({msie: options.msie});
           currentHref = fakeWindow.location.href;
-          pushState = spyOn(fakeWindow.history, 'pushState').and.callThrough();
-          replaceState = spyOn(fakeWindow.history, 'replaceState').and.callThrough();
-          locationReplace = spyOn(fakeWindow.location, 'replace').and.callThrough();
+          pushState = spyOn(fakeWindow.history, 'pushState').andCallThrough();
+          replaceState = spyOn(fakeWindow.history, 'replaceState').andCallThrough();
+          locationReplace = spyOn(fakeWindow.location, 'replace').andCallThrough();
 
           browser = new Browser(fakeWindow, fakeDocument, fakeLog, sniffer);
           browser.onUrlChange(function() {});
@@ -524,9 +516,9 @@ describe('browser', function() {
         it('should not do pushState with the same URL and state from $browser.state()', function() {
           browser.url(currentHref, false, {prop: 'val'});
 
-          pushState.calls.reset();
-          replaceState.calls.reset();
-          locationReplace.calls.reset();
+          pushState.reset();
+          replaceState.reset();
+          locationReplace.reset();
 
           browser.url(currentHref, false, browser.state());
           expect(pushState).not.toHaveBeenCalled();
@@ -728,10 +720,10 @@ describe('browser', function() {
 
       module(function($provide, $locationProvider) {
 
-        spyOn(fakeWindow.history, 'pushState').and.callFake(function(stateObj, title, newUrl) {
+        spyOn(fakeWindow.history, 'pushState').andCallFake(function(stateObj, title, newUrl) {
           fakeWindow.location.href = newUrl;
         });
-        spyOn(fakeWindow.location, 'replace').and.callFake(function(newUrl) {
+        spyOn(fakeWindow.location, 'replace').andCallFake(function(newUrl) {
           fakeWindow.location.href = newUrl;
         });
         $provide.value('$browser', browser);
@@ -838,7 +830,7 @@ describe('browser', function() {
         }
         return _url.call(this, newUrl, replace);
       };
-      spyOn(browser, 'url').and.callThrough();
+      spyOn(browser, 'url').andCallThrough();
       inject(function($rootScope, $location) {
         $rootScope.$digest();
         $rootScope.$digest();

@@ -88,11 +88,7 @@ describe('$anchorScroll', function() {
     return function($window) {
       forEach(elmSpy, function(spy, id) {
         var count = map[id] || 0;
-        if (count > 0) {
-          expect(spy).toHaveBeenCalledTimes(count);
-        } else {
-          expect(spy).not.toHaveBeenCalled();
-        }
+        expect(spy.callCount).toBe(count);
       });
       expect($window.scrollTo).not.toHaveBeenCalled();
     };
@@ -110,7 +106,7 @@ describe('$anchorScroll', function() {
     return function() {
       spyOn(window, 'jqLiteDocumentLoaded');
       if (fake) {
-        window.jqLiteDocumentLoaded.and.callFake(fake);
+        window.jqLiteDocumentLoaded.andCallFake(fake);
       }
     };
   }
@@ -127,7 +123,7 @@ describe('$anchorScroll', function() {
 
   function fireWindowLoadEvent() {
     return function($browser) {
-      var callback = window.jqLiteDocumentLoaded.calls.mostRecent().args[0];
+      var callback = window.jqLiteDocumentLoaded.mostRecentCall.args[0];
       callback();
       $browser.defer.flush();
     };
@@ -386,14 +382,10 @@ describe('$anchorScroll', function() {
 
       return function($rootScope, $window) {
         inject(expectScrollingTo(identifierCountMap));
-        if (list.length > 0) {
-          expect($window.scrollBy).toHaveBeenCalledTimes(list.length);
-        } else {
-          expect($window.scrollBy).not.toHaveBeenCalled();
-        }
+        expect($window.scrollBy.callCount).toBe(list.length);
         forEach(list, function(offset, idx) {
           // Due to sub-pixel rendering, there is a +/-1 error margin in the actual offset
-          var args = $window.scrollBy.calls.argsFor(idx);
+          var args = $window.scrollBy.calls[idx].args;
           expect(args[0]).toBe(0);
           expect(Math.abs(offset + args[1])).toBeLessThan(1);
         });

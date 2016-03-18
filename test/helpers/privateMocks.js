@@ -23,8 +23,8 @@ function they(msg, vals, spec) {
   baseThey(msg, vals, spec, it);
 }
 
-function fthey(msg, vals, spec) {
-  baseThey(msg, vals, spec, fit);
+function tthey(msg, vals, spec) {
+  baseThey(msg, vals, spec, iit);
 }
 
 function xthey(msg, vals, spec) {

@@ -131,9 +131,9 @@
 
     /* jasmine / karma */
     "it": false,
-    "fit": false,
+    "iit": false,
     "describe": false,
-    "fdescribe": false,
+    "ddescribe": false,
     "beforeEach": false,
     "afterEach": false,
     "expect": false,
@@ -144,7 +144,7 @@
     "runs": false,
     "dump": false,
     "they": false,
-    "fthey": false,
+    "tthey": false,
     "xthey": false,
     "assertCompareNodes": false,
 
@@ -168,7 +168,6 @@
     "createMockStyleSheet": false,
     "browserSupportsCssAnimations": false,
     "browserTrigger": false,
-    "jqLiteCacheSize": false,
-    "createAsync": false
+    "jqLiteCacheSize": false
   }
 }

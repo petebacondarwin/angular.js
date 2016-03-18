@@ -35,7 +35,7 @@ function init {
 }
 
 function build {
-  source ./set-node-version.sh
+  ./set-node-version.sh
   cd ../..
 
   npm install -g grunt-cli

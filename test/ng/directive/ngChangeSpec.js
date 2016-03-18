@@ -1,12 +1,19 @@
 'use strict';
 
-/* globals generateInputCompilerHelper: false */
+/* globals getInputCompileHelper: false */
 
 describe('ngChange', function() {
 
-  var helper = {}, $rootScope;
+  var helper, $rootScope;
 
-  generateInputCompilerHelper(helper);
+  beforeEach(function() {
+    helper = getInputCompileHelper(this);
+  });
+
+  afterEach(function() {
+    helper.dealoc();
+  });
+
 
   beforeEach(inject(function(_$rootScope_) {
     $rootScope = _$rootScope_;
@@ -15,7 +22,7 @@ describe('ngChange', function() {
   it('should $eval expression after new value is set in the model', function() {
     helper.compileInput('<input type="text" ng-model="value" ng-change="change()" />');
 
-    $rootScope.change = jasmine.createSpy('change').and.callFake(function() {
+    $rootScope.change = jasmine.createSpy('change').andCallFake(function() {
       expect($rootScope.value).toBe('new value');
     });
 

@@ -38,8 +38,8 @@ describe('select', function() {
           pre: function(scope, element, attrs, ctrl) {
             selectCtrl = ctrl;
             renderSpy = jasmine.createSpy('renderSpy');
-            selectCtrl.ngModelCtrl.$render = renderSpy.and.callFake(selectCtrl.ngModelCtrl.$render);
-            spyOn(selectCtrl, 'writeValue').and.callThrough();
+            selectCtrl.ngModelCtrl.$render = renderSpy.andCallFake(selectCtrl.ngModelCtrl.$render);
+            spyOn(selectCtrl, 'writeValue').andCallThrough();
           }
         }
       };
@@ -71,54 +71,40 @@ describe('select', function() {
 
 
   beforeEach(function() {
-    jasmine.addMatchers({
-      toEqualSelect: function() {
-        return {
-          compare: function(actual, expected) {
-            var actualValues = [],
-                expectedValues = [].slice.call(arguments, 1);
+    this.addMatchers({
+      toEqualSelect: function(expected) {
+        var actualValues = [],
+            expectedValues = [].slice.call(arguments);
 
-            forEach(actual.find('option'), function(option) {
-              actualValues.push(option.selected ? [option.value] : option.value);
-            });
+        forEach(this.actual.find('option'), function(option) {
+          actualValues.push(option.selected ? [option.value] : option.value);
+        });
 
-            var message = function() {
-              return 'Expected ' + toJson(actualValues) + ' to equal ' + toJson(expectedValues) + '.';
-            };
-
-            return {
-              pass: equals(expectedValues, actualValues),
-              message: message
-            };
-          }
+        this.message = function() {
+          return 'Expected ' + toJson(actualValues) + ' to equal ' + toJson(expectedValues) + '.';
         };
+
+        return equals(expectedValues, actualValues);
       },
 
-      toEqualSelectWithOptions: function() {
-        return {
-          compare: function(actual, expected) {
-            var actualValues = {};
-            var optionGroup;
-            var optionValue;
+      toEqualSelectWithOptions: function(expected) {
+        var actualValues = {};
+        var optionGroup;
+        var optionValue;
 
-            forEach(actual.find('option'), function(option) {
-              optionGroup = option.parentNode.label || '';
-              actualValues[optionGroup] = actualValues[optionGroup] || [];
-              // IE9 doesn't populate the label property from the text property like other browsers
-              optionValue = option.label || option.text;
-              actualValues[optionGroup].push(option.selected ? [optionValue] : optionValue);
-            });
+        forEach(this.actual.find('option'), function(option) {
+          optionGroup = option.parentNode.label || '';
+          actualValues[optionGroup] = actualValues[optionGroup] || [];
+          // IE9 doesn't populate the label property from the text property like other browsers
+          optionValue = option.label || option.text;
+          actualValues[optionGroup].push(option.selected ? [optionValue] : optionValue);
+        });
 
-            var message = function() {
-              return 'Expected ' + toJson(actualValues) + ' to equal ' + toJson(expected) + '.';
-            };
-
-            return {
-              pass: equals(expected, actualValues),
-              message: message
-            };
-          }
+        this.message = function() {
+          return 'Expected ' + toJson(actualValues) + ' to equal ' + toJson(expected) + '.';
         };
+
+        return equals(expected, actualValues);
       }
     });
 
@@ -1039,7 +1025,7 @@ describe('select', function() {
           '</select>');
 
         ngModelCtrl = element.controller('ngModel');
-        spyOn(ngModelCtrl, '$render').and.callThrough();
+        spyOn(ngModelCtrl, '$render').andCallThrough();
       });
 
 
@@ -1047,17 +1033,17 @@ describe('select', function() {
         scope.$apply(function() {
           scope.selection = ['A'];
         });
-        expect(ngModelCtrl.$render).toHaveBeenCalledTimes(1);
+        expect(ngModelCtrl.$render.calls.length).toBe(1);
 
         scope.$apply(function() {
           scope.selection = ['A', 'B'];
         });
-        expect(ngModelCtrl.$render).toHaveBeenCalledTimes(2);
+        expect(ngModelCtrl.$render.calls.length).toBe(2);
 
         scope.$apply(function() {
           scope.selection = [];
         });
-        expect(ngModelCtrl.$render).toHaveBeenCalledTimes(3);
+        expect(ngModelCtrl.$render.calls.length).toBe(3);
       });
 
 
@@ -1065,17 +1051,17 @@ describe('select', function() {
         scope.$apply(function() {
           scope.selection = ['A'];
         });
-        expect(ngModelCtrl.$render).toHaveBeenCalledTimes(1);
+        expect(ngModelCtrl.$render.calls.length).toBe(1);
 
         scope.$apply(function() {
           scope.selection.push('B');
         });
-        expect(ngModelCtrl.$render).toHaveBeenCalledTimes(2);
+        expect(ngModelCtrl.$render.calls.length).toBe(2);
 
         scope.$apply(function() {
           scope.selection.length = 0;
         });
-        expect(ngModelCtrl.$render).toHaveBeenCalledTimes(3);
+        expect(ngModelCtrl.$render.calls.length).toBe(3);
       });
 
     });
@@ -1136,7 +1122,7 @@ describe('select', function() {
       '</select>');
 
       var selectCtrl = element.controller('select');
-      spyOn(selectCtrl, 'removeOption').and.callThrough();
+      spyOn(selectCtrl, 'removeOption').andCallThrough();
 
       scope.$digest();
       expect(scope.selected).toBeUndefined();
@@ -1185,7 +1171,7 @@ describe('select', function() {
       '</select>');
 
       var selectCtrl = element.controller('select');
-      spyOn(selectCtrl, 'removeOption').and.callThrough();
+      spyOn(selectCtrl, 'removeOption').andCallThrough();
 
       scope.$digest();
       expect(scope.selected).toBeUndefined();

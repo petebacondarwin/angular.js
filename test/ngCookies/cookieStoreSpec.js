@@ -8,7 +8,7 @@ describe('$cookieStore', function() {
 
 
   it('should get cookie', inject(function($cookieStore, $cookies) {
-    $cookies.getObject.and.returnValue('value');
+    $cookies.getObject.andReturn('value');
     expect($cookieStore.get('name')).toBe('value');
     expect($cookies.getObject).toHaveBeenCalledWith('name');
   }));

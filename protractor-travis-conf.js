@@ -9,7 +9,7 @@ if (process.env.BROWSER_PROVIDER === 'browserstack') {
     capabilitiesForBrowserStack({
       browserName: 'chrome',
       platform: 'MAC',
-      version: '49'
+      version: '34'
     }),
     capabilitiesForBrowserStack({
       browserName: 'firefox',
@@ -18,7 +18,7 @@ if (process.env.BROWSER_PROVIDER === 'browserstack') {
     capabilitiesForBrowserStack({
       browserName: 'safari',
       platform: 'MAC',
-      version: '9'
+      version: '7'
     })
   ];
 } else {
@@ -28,8 +28,8 @@ if (process.env.BROWSER_PROVIDER === 'browserstack') {
   config.multiCapabilities = [
     capabilitiesForSauceLabs({
       browserName: 'chrome',
-      platform: 'OS X 10.11',
-      version: '48'
+      platform: 'OS X 10.9',
+      version: '34'
     }),
     capabilitiesForSauceLabs({
       browserName: 'firefox',
@@ -37,8 +37,8 @@ if (process.env.BROWSER_PROVIDER === 'browserstack') {
     }),
     capabilitiesForSauceLabs({
       browserName: 'safari',
-      platform: 'OS X 10.11',
-      version: '9'
+      platform: 'OS X 10.9',
+      version: '7'
     })
   ];
 }

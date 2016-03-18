@@ -1,12 +1,19 @@
 'use strict';
 
-/* globals generateInputCompilerHelper: false */
+/* globals getInputCompileHelper: false */
 
 describe('ngList', function() {
 
-  var helper = {}, $rootScope;
+  var helper, $rootScope;
 
-  generateInputCompilerHelper(helper);
+  beforeEach(function() {
+    helper = getInputCompileHelper(this);
+  });
+
+  afterEach(function() {
+    helper.dealoc();
+  });
+
 
   beforeEach(inject(function(_$rootScope_) {
     $rootScope = _$rootScope_;

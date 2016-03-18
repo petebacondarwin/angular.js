@@ -425,12 +425,12 @@ describe('ngAnimate integration tests', function() {
 
       $animate.flush();
 
-      expect(spy).toHaveBeenCalledTimes(1);
+      expect(spy.callCount).toBe(1);
 
       browserTrigger(element, 'transitionend', { timeStamp: Date.now(), elapsedTime: 2 });
       $animate.flush();
 
-      expect(spy).toHaveBeenCalledTimes(2);
+      expect(spy.callCount).toBe(2);
 
       dealoc(element);
     }));
@@ -732,8 +732,7 @@ describe('ngAnimate integration tests', function() {
           from: { height: '50px' },
           to: { width: '100px' },
           addClass: 'one',
-          removeClass: 'two',
-          domOperation: undefined
+          removeClass: 'two'
         };
 
         var copiedOptions = copy(initialOptions);

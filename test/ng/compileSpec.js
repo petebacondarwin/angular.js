@@ -1,5 +1,6 @@
 'use strict';
 
+
 describe('$compile', function() {
   function isUnknownElement(el) {
     return !!el.toString().match(/Unknown/);
@@ -371,26 +372,27 @@ describe('$compile', function() {
       expect($document.scope()).toBe($rootScope);
     }));
 
-    it('should wrap root text nodes in spans', inject(function($compile, $rootScope) {
-      element = jqLite('<div>A&lt;a&gt;B&lt;/a&gt;C</div>');
-      var text = element.contents();
-      expect(text[0].nodeName).toEqual('#text');
-      text = $compile(text)($rootScope);
-      expect(text[0].nodeName).toEqual('SPAN');
-      expect(element.find('span').text()).toEqual('A<a>B</a>C');
-    }));
 
-
-    it('should not wrap root whitespace text nodes in spans', function() {
+    it('should not wrap root text nodes in spans', function() {
       element = jqLite(
-        '<div>   <div>A</div>\n  ' + // The spaces and newlines here should not get wrapped
-        '<div>B</div>C\t\n  ' +  // The "C", tabs and spaces here will be wrapped
+        '<div>   <div>A</div>\n  ' +
+        '<div>B</div>C\t\n  ' +
         '</div>');
       $compile(element.contents())($rootScope);
       var spans = element.find('span');
-      expect(spans.length).toEqual(1);
-      expect(spans.text().indexOf('C')).toEqual(0);
+      expect(spans.length).toEqual(0);
     });
+
+
+    it('should be able to compile text nodes at the root', inject(function($rootScope) {
+      element = jqLite('<div>Name: {{name}}<br />\nColor: {{color}}</div>');
+      $rootScope.name = 'Lucas';
+      $rootScope.color = 'blue';
+      $compile(element.contents())($rootScope);
+      $rootScope.$digest();
+      expect(element.text()).toEqual('Name: Lucas\nColor: blue');
+    }));
+
 
     it('should not leak memory when there are top level empty text nodes', function() {
       // We compile the contents of element (i.e. not element itself)
@@ -1925,7 +1927,7 @@ describe('$compile', function() {
 
             $rootScope.$apply();
 
-            expect(controllerSpy).toHaveBeenCalledTimes(2);
+            expect(controllerSpy.callCount).toBe(2);
             expect(element.text()).toBe('boom!1|boom!2|');
           });
         });
@@ -3058,7 +3060,7 @@ describe('$compile', function() {
 
 
     it('should delegate exceptions to $exceptionHandler', function() {
-      observeSpy = jasmine.createSpy('$observe attr').and.throwError('ERROR');
+      observeSpy = jasmine.createSpy('$observe attr').andThrow('ERROR');
 
       module(function($exceptionHandlerProvider) {
         $exceptionHandlerProvider.mode('log');
@@ -3075,8 +3077,8 @@ describe('$compile', function() {
         $rootScope.$digest();
 
         expect(observeSpy).toHaveBeenCalled();
-        expect(observeSpy).toHaveBeenCalledTimes(2);
-        expect($exceptionHandler.errors).toEqual([new Error('ERROR'), new Error('ERROR')]);
+        expect(observeSpy.callCount).toBe(2);
+        expect($exceptionHandler.errors).toEqual(['ERROR', 'ERROR']);
       });
     });
 
@@ -3443,8 +3445,8 @@ describe('$compile', function() {
 
         expect(spies[0]).toHaveBeenCalledOnceWith('id_1');
         expect(spies[1]).toHaveBeenCalledOnceWith('id_2');
-        spies[0].calls.reset();
-        spies[1].calls.reset();
+        spies[0].reset();
+        spies[1].reset();
 
         $rootScope.$apply(function() {
           $rootScope.items[0].id = 5;
@@ -4596,7 +4598,7 @@ describe('$compile', function() {
         "    controllerCalled = true;\n" +
         "  }\n" +
         "}");
-      spyOn(Controller.prototype, '$onInit').and.callThrough();
+      spyOn(Controller.prototype, '$onInit').andCallThrough();
 
       module(function($compileProvider) {
         $compileProvider.directive('fooDir', valueFn({
@@ -5332,10 +5334,10 @@ describe('$compile', function() {
       }
 
       function Controller1($element) { this.id = 1; this.element = $element; }
-      Controller1.prototype.$onInit = jasmine.createSpy('$onInit').and.callFake(check);
+      Controller1.prototype.$onInit = jasmine.createSpy('$onInit').andCallFake(check);
 
       function Controller2($element) { this.id = 2; this.element = $element; }
-      Controller2.prototype.$onInit = jasmine.createSpy('$onInit').and.callFake(check);
+      Controller2.prototype.$onInit = jasmine.createSpy('$onInit').andCallFake(check);
 
       angular.module('my', [])
         .directive('d1', valueFn({ controller: Controller1 }))
@@ -5738,7 +5740,7 @@ describe('$compile', function() {
         parentController = this.container;
         siblingController = this.friend;
       };
-      spyOn(MeController.prototype, '$onInit').and.callThrough();
+      spyOn(MeController.prototype, '$onInit').andCallThrough();
 
       angular.module('my', [])
         .directive('me', function() {
@@ -5784,7 +5786,7 @@ describe('$compile', function() {
         parentController = this.container;
         siblingController = this.friend;
       };
-      spyOn(MeController.prototype, '$onInit').and.callThrough();
+      spyOn(MeController.prototype, '$onInit').andCallThrough();
 
       angular.module('my', [])
         .directive('me', function() {
@@ -5830,7 +5832,7 @@ describe('$compile', function() {
             siblingController = this.friend;
           }
         };
-        spyOn(meController, '$onInit').and.callThrough();
+        spyOn(meController, '$onInit').andCallThrough();
         return meController;
       }
 
@@ -6594,8 +6596,8 @@ describe('$compile', function() {
           $rootScope.x = 'root';
           $rootScope.$apply();
           expect(element.text()).toEqual('W:iso-1-2;T:root-2-3;');
-          expect(jqLite(element.find('span')[0]).text()).toEqual('T:root-2-3');
-          expect(jqLite(element.find('span')[1]).text()).toEqual(';');
+          expect(jqLite(jqLite(element.find('li')[1]).contents()[0]).text()).toEqual('T:root-2-3');
+          expect(jqLite(element.find('span')[0]).text()).toEqual(';');
         });
       });
 
@@ -6629,6 +6631,37 @@ describe('$compile', function() {
           $httpBackend.flush();
           $rootScope.$apply();
           expect(element.text()).toEqual('book-chapter-section-![(paragraph)]!');
+        });
+      });
+
+
+      it('should not merge text elements from transcluded content', function() {
+        module(function() {
+          directive('foo', valueFn({
+            transclude: 'content',
+            template: '<div>This is before {{before}}. </div>',
+            link: function(scope, element, attr, ctrls, $transclude) {
+              var futureParent = element.children().eq(0);
+              $transclude(function(clone) {
+                futureParent.append(clone);
+              }, futureParent);
+            },
+            scope: true
+          }));
+        });
+        inject(function($rootScope, $compile) {
+          element = $compile('<div><div foo>This is after {{after}}</div></div>')($rootScope);
+          $rootScope.before = "BEFORE";
+          $rootScope.after = "AFTER";
+          $rootScope.$apply();
+          expect(element.text()).toEqual('This is before BEFORE. This is after AFTER');
+
+          $rootScope.before = "Not-Before";
+          $rootScope.after = "AfTeR";
+          $rootScope.$$childHead.before = "BeFoRe";
+          $rootScope.$$childHead.after = "Not-After";
+          $rootScope.$apply();
+          expect(element.text()).toEqual('This is before BeFoRe. This is after AfTeR');
         });
       });
 
@@ -6931,11 +6964,11 @@ describe('$compile', function() {
               transclude: true,
               replace: true,
               scope: true,
-              template: '<div><span>I:{{$$transcluded}}</span><div ng-transclude></div></div>'
+              template: '<div><span>I:{{$$transcluded}}</span><span ng-transclude></span></div>'
             };
           });
         });
-        inject(function(log, $rootScope, $compile) {
+        inject(function($rootScope, $compile) {
           element = $compile('<div><div trans>T:{{$$transcluded}}</div></div>')($rootScope);
           $rootScope.$apply();
           expect(jqLite(element.find('span')[0]).text()).toEqual('I:');
@@ -6954,10 +6987,10 @@ describe('$compile', function() {
             };
           });
         });
-        inject(function(log, $rootScope, $compile) {
+        inject(function($rootScope, $compile) {
           element = $compile('<div trans>unicorn!</div>')($rootScope);
           $rootScope.$apply();
-          expect(sortedHtml(element.html())).toEqual('<div ng-transclude=""><span>unicorn!</span></div>');
+          expect(sortedHtml(element.html())).toEqual('<div ng-transclude="">unicorn!</div>');
         });
       });
 
@@ -8858,7 +8891,7 @@ describe('$compile', function() {
         element = $compile('<img src="{{testUrl}}"></img>')($rootScope);
         $rootScope.testUrl = "someUrl";
 
-        $$sanitizeUri.and.returnValue('someSanitizedUrl');
+        $$sanitizeUri.andReturn('someSanitizedUrl');
         $rootScope.$apply();
         expect(element.attr('src')).toBe('someSanitizedUrl');
         expect($$sanitizeUri).toHaveBeenCalledWith($rootScope.testUrl, true);
@@ -8888,7 +8921,7 @@ describe('$compile', function() {
         element = $compile('<img srcset="{{testUrl}}"></img>')($rootScope);
         $rootScope.testUrl = "someUrl";
 
-        $$sanitizeUri.and.returnValue('someSanitizedUrl');
+        $$sanitizeUri.andReturn('someSanitizedUrl');
         $rootScope.$apply();
         expect(element.attr('srcset')).toBe('someSanitizedUrl');
         expect($$sanitizeUri).toHaveBeenCalledWith($rootScope.testUrl, true);
@@ -8980,7 +9013,7 @@ describe('$compile', function() {
         element = $compile('<a href="{{testUrl}}"></a>')($rootScope);
         $rootScope.testUrl = "someUrl";
 
-        $$sanitizeUri.and.returnValue('someSanitizedUrl');
+        $$sanitizeUri.andReturn('someSanitizedUrl');
         $rootScope.$apply();
         expect(element.attr('href')).toBe('someSanitizedUrl');
         expect($$sanitizeUri).toHaveBeenCalledWith($rootScope.testUrl, false);
@@ -8996,7 +9029,7 @@ describe('$compile', function() {
         element = $compile('<a ng-href="{{testUrl}}"></a>')($rootScope);
         $rootScope.testUrl = "someUrl";
 
-        $$sanitizeUri.and.returnValue('someSanitizedUrl');
+        $$sanitizeUri.andReturn('someSanitizedUrl');
         $rootScope.$apply();
         expect(element.attr('href')).toBe('someSanitizedUrl');
         expect($$sanitizeUri).toHaveBeenCalledWith($rootScope.testUrl, false);
@@ -9012,7 +9045,7 @@ describe('$compile', function() {
         element = $compile('<svg><a xlink:href="" ng-href="{{ testUrl }}"></a></svg>')($rootScope);
         $rootScope.testUrl = "evilUrl";
 
-        $$sanitizeUri.and.returnValue('someSanitizedUrl');
+        $$sanitizeUri.andReturn('someSanitizedUrl');
         $rootScope.$apply();
         expect(element.find('a').prop('href').baseVal).toBe('someSanitizedUrl');
         expect($$sanitizeUri).toHaveBeenCalledWith($rootScope.testUrl, false);
@@ -9029,7 +9062,7 @@ describe('$compile', function() {
         element = $compile('<svg><a xlink:href="" ng-href="{{ testUrl }}"></a></svg>')($rootScope);
         $rootScope.testUrl = "evilUrl";
 
-        $$sanitizeUri.and.returnValue('someSanitizedUrl');
+        $$sanitizeUri.andReturn('someSanitizedUrl');
         $rootScope.$apply();
         expect(element.find('a').prop('href').baseVal).toBe('someSanitizedUrl');
         expect($$sanitizeUri).toHaveBeenCalledWith($rootScope.testUrl, false);

@@ -937,7 +937,7 @@ describe('ngView animations', function() {
 
     function spyOnAnimateEnter() {
       return function($animate) {
-        spyOn($animate, 'enter').and.callThrough();
+        spyOn($animate, 'enter').andCallThrough();
       };
     }
 

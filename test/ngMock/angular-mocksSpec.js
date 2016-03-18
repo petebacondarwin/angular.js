@@ -65,7 +65,7 @@ describe('ngMock', function() {
 
       //0:00 in +3h
       var t2 = new angular.mock.TzDate(3, jan2);
-      expect(t2.getHours()).toMatch('21');
+      expect(t2.getHours()).toMatch(21);
     });
 
 
@@ -88,11 +88,11 @@ describe('ngMock', function() {
 
       //0:15 in +3h
       var t2 = new angular.mock.TzDate(3, minutes(15));
-      expect(t2.getMinutes()).toMatch('15');
+      expect(t2.getMinutes()).toMatch(15);
 
       //0:15 in +3.25h
       var t2a = new angular.mock.TzDate(3.25, minutes(15));
-      expect(t2a.getMinutes()).toMatch('0');
+      expect(t2a.getMinutes()).toMatch(0);
     });
 
 
@@ -107,7 +107,7 @@ describe('ngMock', function() {
 
       //0 in +3h
       var t2 = new angular.mock.TzDate(3, 0);
-      expect(t2.getSeconds()).toMatch('0');
+      expect(t2.getSeconds()).toMatch(0);
     });
 
 
@@ -154,7 +154,7 @@ describe('ngMock', function() {
 
     it('should throw error when no third param but toString called', function() {
       expect(function() { new angular.mock.TzDate(0,0).toString(); }).
-                           toThrowError('Method \'toString\' is not implemented in the TzDate mock');
+                           toThrow('Method \'toString\' is not implemented in the TzDate mock');
     });
   });
 
@@ -300,7 +300,7 @@ describe('ngMock', function() {
 
 
     it('should call $apply after each task is executed', inject(function($interval, $rootScope) {
-      var applySpy = spyOn($rootScope, '$apply').and.callThrough();
+      var applySpy = spyOn($rootScope, '$apply').andCallThrough();
 
       $interval(noop, 1000);
       expect(applySpy).not.toHaveBeenCalled();
@@ -308,18 +308,18 @@ describe('ngMock', function() {
       $interval.flush(1000);
       expect(applySpy).toHaveBeenCalledOnce();
 
-      applySpy.calls.reset();
+      applySpy.reset();
 
       $interval(noop, 1000);
       $interval(noop, 1000);
       $interval.flush(1000);
-      expect(applySpy).toHaveBeenCalledTimes(3);
+      expect(applySpy.callCount).toBe(3);
     }));
 
 
     it('should NOT call $apply if invokeApply is set to false',
         inject(function($interval, $rootScope) {
-      var applySpy = spyOn($rootScope, '$apply').and.callThrough();
+      var applySpy = spyOn($rootScope, '$apply').andCallThrough();
 
       var counter = 0;
       $interval(function increment() { counter++; }, 1000, 0, false);
@@ -437,7 +437,7 @@ describe('ngMock', function() {
 
       it('should call $apply even if an exception is thrown in callback', inject(
           function($interval, $rootScope) {
-        var applySpy = spyOn($rootScope, '$apply').and.callThrough();
+        var applySpy = spyOn($rootScope, '$apply').andCallThrough();
 
         $interval(function() { throw "Test Error"; }, 1000);
         expect(applySpy).not.toHaveBeenCalled();
@@ -581,7 +581,7 @@ describe('ngMock', function() {
     });
 
     it('should throw an exception if there is nothing to be flushed', function() {
-      expect(function() {browser.defer.flush();}).toThrowError('No deferred tasks to be flushed');
+      expect(function() {browser.defer.flush();}).toThrow('No deferred tasks to be flushed');
     });
   });
 
@@ -622,7 +622,7 @@ describe('ngMock', function() {
       module(function($exceptionHandlerProvider) {
         expect(function() {
           $exceptionHandlerProvider.mode('XXX');
-        }).toThrowError("Unknown mode 'XXX', only 'log'/'rethrow' modes are allowed!");
+        }).toThrow("Unknown mode 'XXX', only 'log'/'rethrow' modes are allowed!");
       });
 
       inject(); // Trigger the tests in `module`
@@ -651,7 +651,7 @@ describe('ngMock', function() {
       $timeout(noop);
 
       var expectedError = 'Deferred tasks to flush (1): {id: 0, time: 0}';
-      expect(function() {$timeout.verifyNoPendingTasks();}).toThrowError(expectedError);
+      expect(function() {$timeout.verifyNoPendingTasks();}).toThrow(expectedError);
     }));
 
 
@@ -897,12 +897,32 @@ describe('ngMock', function() {
         });
       });
 
+
+      describe('this', function() {
+
+        it('should set `this` to be the jasmine context', inject(function() {
+          expect(this instanceof jasmine.Spec).toBe(true);
+        }));
+
+        it('should set `this` to be the jasmine context when inlined in a test', function() {
+          var tested = false;
+
+          inject(function() {
+            expect(this instanceof jasmine.Spec).toBe(true);
+            tested = true;
+          });
+
+          expect(tested).toBe(true);
+        });
+      });
+
+
       it('should not change thrown Errors', inject(function($sniffer) {
         expect(function() {
           inject(function() {
             throw new Error('test message');
           });
-        }).toThrow(jasmine.objectContaining({message: 'test message'}));
+        }).toThrow('test message');
       }));
 
       it('should not change thrown strings', inject(function($sniffer) {
@@ -953,7 +973,7 @@ describe('ngMock', function() {
       hb.when('GET', '/url1').respond(200, 'content', {});
       hb.when('GET', '/url1').respond(201, 'another', {});
 
-      callback.and.callFake(function(status, response) {
+      callback.andCallFake(function(status, response) {
         expect(status).toBe(200);
         expect(response).toBe('content');
       });
@@ -970,7 +990,7 @@ describe('ngMock', function() {
 
       hb.when('GET', '/url1').respond(200, mockObject, {});
 
-      callback.and.callFake(function(status, response) {
+      callback.andCallFake(function(status, response) {
         expect(status).toBe(200);
         expect(response).toEqual({a: 'b'});
         expect(response).not.toBe(mockObject);
@@ -983,7 +1003,7 @@ describe('ngMock', function() {
 
       // Fire it again and verify that the returned mock data has not been
       // modified.
-      callback.calls.reset();
+      callback.reset();
       hb('GET', '/url1', null, callback);
       hb.flush();
       expect(callback).toHaveBeenCalledOnce();
@@ -997,7 +1017,7 @@ describe('ngMock', function() {
 
         hb.when('GET', '/url1').respond(200, mockBlob, {});
 
-        callback.and.callFake(function(status, response) {
+        callback.andCallFake(function(status, response) {
           expect(response).not.toBe(mockBlob);
           expect(response.size).toBe(13);
           expect(response.type).toBe('application/json');
@@ -1015,7 +1035,7 @@ describe('ngMock', function() {
       hb.when('GET', '/url1').respond(200, 'content');
       expect(function() {
         hb('GET', '/xxx');
-      }).toThrowError('Unexpected request: GET /xxx\nNo more request expected');
+      }).toThrow('Unexpected request: GET /xxx\nNo more request expected');
     });
 
 
@@ -1086,7 +1106,7 @@ describe('ngMock', function() {
 
     it('should match only method', function() {
       hb.when('GET').respond(202, 'c');
-      callback.and.callFake(function(status, response) {
+      callback.andCallFake(function(status, response) {
         expect(status).toBe(202);
         expect(response).toBe('c');
       });
@@ -1109,9 +1129,9 @@ describe('ngMock', function() {
 
       hb.flush();
 
-      expect(callback).toHaveBeenCalledTimes(2);
-      expect(callback.calls.argsFor(0)).toEqual([201, 'second', '', '']);
-      expect(callback.calls.argsFor(1)).toEqual([200, 'first', '', '']);
+      expect(callback.callCount).toBe(2);
+      expect(callback.argsForCall[0]).toEqual([201, 'second', '', '']);
+      expect(callback.argsForCall[1]).toEqual([200, 'first', '', '']);
     });
 
 
@@ -1125,7 +1145,7 @@ describe('ngMock', function() {
       });
 
       it('should default status code to 200', function() {
-        callback.and.callFake(function(status, response) {
+        callback.andCallFake(function(status, response) {
           expect(status).toBe(200);
           expect(response).toBe('some-data');
         });
@@ -1136,7 +1156,7 @@ describe('ngMock', function() {
         hb('GET', '/url2', null, callback);
         hb.flush();
         expect(callback).toHaveBeenCalled();
-        expect(callback).toHaveBeenCalledTimes(2);
+        expect(callback.callCount).toBe(2);
       });
 
       it('should default status code to 200 and provide status text', function() {
@@ -1191,9 +1211,9 @@ describe('ngMock', function() {
 
         hb.flush();
 
-        expect(callback).toHaveBeenCalledTimes(2);
-        expect(callback.calls.argsFor(0)).toEqual([200, 'first', '', '']);
-        expect(callback.calls.argsFor(1)).toEqual([200, 'second', '', '']);
+        expect(callback.callCount).toBe(2);
+        expect(callback.argsForCall[0]).toEqual([200, 'first', '', '']);
+        expect(callback.argsForCall[1]).toEqual([200, 'second', '', '']);
       });
 
       it('should be able to override response of expect definition', function() {
@@ -1243,12 +1263,12 @@ describe('ngMock', function() {
 
         expect(function() {
           hb('GET', '/url2', null, noop, {});
-        }).toThrowError('Unexpected request: GET /url2\nExpected GET /url1');
+        }).toThrow('Unexpected request: GET /url2\nExpected GET /url1');
       });
 
 
       it('should have precedence over when()', function() {
-        callback.and.callFake(function(status, response) {
+        callback.andCallFake(function(status, response) {
           expect(status).toBe(300);
           expect(response).toBe('expect');
         });
@@ -1268,8 +1288,8 @@ describe('ngMock', function() {
 
         expect(function() {
           hb('GET', '/match', null, noop, {});
-        }).toThrowError('Expected GET /match with different headers\n' +
-                        'EXPECTED: {"Content-Type":"application/json"}\nGOT:      {}');
+        }).toThrow('Expected GET /match with different headers\n' +
+                   'EXPECTED: {"Content-Type":"application/json"}\nGOT:      {}');
       });
 
 
@@ -1279,8 +1299,8 @@ describe('ngMock', function() {
 
         expect(function() {
           hb('GET', '/match', 'different', noop, {});
-        }).toThrowError('Expected GET /match with different data\n' +
-                        'EXPECTED: some-data\nGOT:      different');
+        }).toThrow('Expected GET /match with different data\n' +
+                   'EXPECTED: some-data\nGOT:      different');
       });
 
 
@@ -1305,13 +1325,13 @@ describe('ngMock', function() {
 
         expect(function() {
           hb('GET', '/match', '{"a":1,"b":3}', noop, {});
-        }).toThrowError('Expected GET /match with different data\n' +
-                        'EXPECTED: {"a":1,"b":2}\nGOT:      {"a":1,"b":3}');
+        }).toThrow('Expected GET /match with different data\n' +
+                   'EXPECTED: {"a":1,"b":2}\nGOT:      {"a":1,"b":3}');
       });
 
 
       it("should use when's respond() when no expect() respond is defined", function() {
-        callback.and.callFake(function(status, response) {
+        callback.andCallFake(function(status, response) {
           expect(status).toBe(201);
           expect(response).toBe('data');
         });
@@ -1347,7 +1367,7 @@ describe('ngMock', function() {
 
         hb.flush(2);
         expect(callback).toHaveBeenCalled();
-        expect(callback).toHaveBeenCalledTimes(2);
+        expect(callback.callCount).toBe(2);
       });
 
 
@@ -1355,19 +1375,19 @@ describe('ngMock', function() {
         hb.when('GET').respond(200, '');
         hb('GET', '/url', null, callback);
 
-        expect(function() {hb.flush(2);}).toThrowError('No more pending request to flush !');
+        expect(function() {hb.flush(2);}).toThrow('No more pending request to flush !');
         expect(callback).toHaveBeenCalledOnce();
       });
 
 
       it('should throw exception when no request to flush', function() {
-        expect(function() {hb.flush();}).toThrowError('No pending request to flush !');
+        expect(function() {hb.flush();}).toThrow('No pending request to flush !');
 
         hb.when('GET').respond(200, '');
         hb('GET', '/some', null, callback);
         hb.flush();
 
-        expect(function() {hb.flush();}).toThrowError('No pending request to flush !');
+        expect(function() {hb.flush();}).toThrow('No pending request to flush !');
       });
 
 
@@ -1376,7 +1396,7 @@ describe('ngMock', function() {
         hb.expect('GET', '/url2').respond();
 
         hb('GET', '/url1', null, angular.noop);
-        expect(function() {hb.flush();}).toThrowError('Unsatisfied requests: GET /url2');
+        expect(function() {hb.flush();}).toThrow('Unsatisfied requests: GET /url2');
       });
     });
 
@@ -1384,7 +1404,7 @@ describe('ngMock', function() {
     it('should abort requests when timeout promise resolves', function() {
       hb.expect('GET', '/url1').respond(200);
 
-      var canceler, then = jasmine.createSpy('then').and.callFake(function(fn) {
+      var canceler, then = jasmine.createSpy('then').andCallFake(function(fn) {
         canceler = fn;
       });
 
@@ -1415,7 +1435,7 @@ describe('ngMock', function() {
       hb.when('GET', '/test');
       expect(function() {
         hb('GET', '/test', null, callback);
-      }).toThrowError('No response defined !');
+      }).toThrow('No response defined !');
     });
 
 
@@ -1423,7 +1443,7 @@ describe('ngMock', function() {
       hb.expect('GET', '/url');
       expect(function() {
         hb('GET', '/url', null, callback);
-      }).toThrowError('No response defined !');
+      }).toThrow('No response defined !');
     });
 
 
@@ -1451,7 +1471,7 @@ describe('ngMock', function() {
         hb('POST', '/u1', 'ddd', noop, {});
 
         expect(function() {hb.verifyNoOutstandingExpectation();}).
-          toThrowError('Unsatisfied requests: GET /u2, POST /u3');
+          toThrow('Unsatisfied requests: GET /u2, POST /u3');
       });
 
 
@@ -1482,7 +1502,7 @@ describe('ngMock', function() {
 
         expect(function() {
           hb.verifyNoOutstandingRequest();
-        }).toThrowError('Unflushed requests: 1');
+        }).toThrow('Unflushed requests: 1');
       });
     });
 
@@ -1859,7 +1879,7 @@ describe('ngMock', function() {
       inject(function($componentController, $rootScope) {
         var $scope = {};
         var ctrl = $componentController('test', { $scope: $scope, a: 'A', b: 'B' }, { x: 'X', y: 'Y' });
-        expect(ctrl).toEqual(extend(new TestController($scope, 'A', 'B'), { x: 'X', y: 'Y' }));
+        expect(ctrl).toEqual({ $scope: $scope, a: 'A', b: 'B', x: 'X', y: 'Y' });
         expect($scope.$ctrl).toBe(ctrl);
       });
     });
@@ -1879,7 +1899,7 @@ describe('ngMock', function() {
       inject(function($componentController, $rootScope) {
         var $scope = {};
         var ctrl = $componentController('test', { $scope: $scope, a: 'A', b: 'B' }, { x: 'X', y: 'Y' });
-        expect(ctrl).toEqual(extend(new TestController($scope, 'A', 'B'), { x: 'X', y: 'Y' }));
+        expect(ctrl).toEqual({ $scope: $scope, a: 'A', b: 'B', x: 'X', y: 'Y' });
         expect($scope.$ctrl).toBe(ctrl);
       });
     });
@@ -1899,7 +1919,7 @@ describe('ngMock', function() {
       inject(function($componentController, $rootScope) {
         var $scope = {};
         var ctrl = $componentController('test', { $scope: $scope, a: 'A', b: 'B' }, { x: 'X', y: 'Y' });
-        expect(ctrl).toEqual(extend(new TestController($scope, 'A', 'B'), { x: 'X', y: 'Y' }));
+        expect(ctrl).toEqual({ $scope: $scope, a: 'A', b: 'B', x: 'X', y: 'Y' });
         expect($scope.$ctrl).toBe(ctrl);
       });
     });
@@ -1919,7 +1939,7 @@ describe('ngMock', function() {
       inject(function($componentController, $rootScope) {
         var $scope = {};
         var ctrl = $componentController('test', { $scope: $scope, a: 'A', b: 'B' }, { x: 'X', y: 'Y' });
-        expect(ctrl).toEqual(extend(new TestController($scope, 'A', 'B'), {x: 'X', y: 'Y'}));
+        expect(ctrl).toEqual({ $scope: $scope, a: 'A', b: 'B', x: 'X', y: 'Y' });
         expect($scope.testCtrl).toBe(ctrl);
       });
     });
@@ -1938,7 +1958,7 @@ describe('ngMock', function() {
       });
       inject(function($componentController, $rootScope) {
         var ctrl = $componentController('test', { $scope: {} });
-        expect(ctrl).toEqual(new TestController());
+        expect(ctrl).toEqual({ r: 6779 });
       });
     });
 
@@ -1956,7 +1976,7 @@ describe('ngMock', function() {
       });
       inject(function($componentController, $rootScope) {
         var ctrl = $componentController('test', { $scope: {} });
-        expect(ctrl).toEqual(new TestController());
+        expect(ctrl).toEqual({ r: 22926 });
       });
     });
 
@@ -1978,7 +1998,7 @@ describe('ngMock', function() {
       });
       inject(function($componentController, $rootScope) {
         var ctrl = $componentController('test', { $scope: {} });
-        expect(ctrl).toEqual(new TestController());
+        expect(ctrl).toEqual({ r: 18842 });
       });
     });
 
@@ -2013,7 +2033,7 @@ describe('ngMock', function() {
       inject(function($componentController, $rootScope) {
         expect(function() {
           $componentController('test', { $scope: {} });
-        }).toThrowError('No component found');
+        }).toThrow('No component found');
       });
     });
 
@@ -2039,7 +2059,7 @@ describe('ngMock', function() {
         expect(function() {
           var $scope = {};
           $componentController('test', { $scope: $scope, a: 'A', b: 'B' }, { x: 'X', y: 'Y' });
-        }).toThrowError('Too many components found');
+        }).toThrow('Too many components found');
       });
     });
   });
@@ -2190,7 +2210,7 @@ describe('ngMockE2E', function() {
       it('should throw an error if there is nothing to animate', inject(function($animate) {
         expect(function() {
           $animate.flush();
-        }).toThrowError('No pending animations ready to be closed or flushed');
+        }).toThrow('No pending animations ready to be closed or flushed');
       }));
 
       it('should trigger the animation to start',
@@ -2285,11 +2305,11 @@ describe('ngMockE2E', function() {
         expect(spy).not.toHaveBeenCalled();
 
         $animate.flush();
-        expect(spy).toHaveBeenCalledTimes(1);
+        expect(spy.callCount).toBe(1);
 
         trackedAnimations[0]();
         $animate.flush();
-        expect(spy).toHaveBeenCalledTimes(2);
+        expect(spy.callCount).toBe(2);
       }));
     });
 
@@ -2362,7 +2382,7 @@ describe('ngMockE2E', function() {
 
         expect(function() {
           $animate.closeAndFlush();
-        }).toThrowError('No pending animations ready to be closed or flushed');
+        }).toThrow('No pending animations ready to be closed or flushed');
 
       }));
     });
@@ -2392,7 +2412,7 @@ describe('`afterEach` clean-up', function() {
 
               // Spy on `angular.element.cleanData()`, so the next test can verify
               // that it has been called as necessary
-              prevCleanDataSpy = spyOn(angular.element, 'cleanData').and.callThrough();
+              prevCleanDataSpy = spyOn(angular.element, 'cleanData').andCallThrough();
 
               return $delegate;
             });
@@ -2409,9 +2429,9 @@ describe('`afterEach` clean-up', function() {
       it('should clean up `$rootElement` after each test', function() {
         // One call is made by `testabilityPatch`'s `dealoc()`
         // We want to verify the subsequent call, made by `angular-mocks`
-        expect(prevCleanDataSpy).toHaveBeenCalledTimes(2);
+        expect(prevCleanDataSpy.callCount).toBe(2);
 
-        var cleanUpNodes = prevCleanDataSpy.calls.argsFor(1)[0];
+        var cleanUpNodes = prevCleanDataSpy.calls[1].args[0];
         expect(cleanUpNodes.length).toBe(1);
         expect(cleanUpNodes[0]).toBe(prevRootElement[0]);
       });
@@ -2435,7 +2455,7 @@ describe('`afterEach` clean-up', function() {
 
               // Spy on `angular.element.cleanData()`, so the next test can verify
               // that it has been called as necessary
-              prevCleanDataSpy = spyOn(angular.element, 'cleanData').and.callThrough();
+              prevCleanDataSpy = spyOn(angular.element, 'cleanData').andCallThrough();
 
               return prevRootElement;
             });
@@ -2462,9 +2482,9 @@ describe('`afterEach` clean-up', function() {
         function() {
           // One call is made by `testabilityPatch`'s `dealoc()`
           // We want to verify the subsequent call, made by `angular-mocks`
-          expect(prevCleanDataSpy).toHaveBeenCalledTimes(2);
+          expect(prevCleanDataSpy.callCount).toBe(2);
 
-          var cleanUpNodes = prevCleanDataSpy.calls.argsFor(1)[0];
+          var cleanUpNodes = prevCleanDataSpy.calls[1].args[0];
           expect(cleanUpNodes.length).toBe(2);
           expect(cleanUpNodes[0]).toBe(prevOriginalRootElement[0]);
           expect(cleanUpNodes[1]).toBe(prevRootElement[0]);
@@ -2503,7 +2523,7 @@ describe('`afterEach` clean-up', function() {
       it('should set up spies for the next test to verify that `$rootScope` was cleaned up',
         inject(function($rootScope) {
           prevRootScope = $rootScope;
-          prevDestroySpy = spyOn($rootScope, '$destroy').and.callThrough();
+          prevDestroySpy = spyOn($rootScope, '$destroy').andCallThrough();
         })
       );
 

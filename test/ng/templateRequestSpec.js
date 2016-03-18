@@ -15,7 +15,7 @@ describe('$templateRequest', function() {
         });
 
         inject(function($templateRequest, $http, $templateCache) {
-          spyOn($http, 'get').and.callThrough();
+          spyOn($http, 'get').andCallThrough();
 
           $templateRequest('tpl.html');
 
@@ -41,7 +41,7 @@ describe('$templateRequest', function() {
         });
 
         inject(function($templateRequest, $http, $templateCache) {
-          spyOn($http, 'get').and.callThrough();
+          spyOn($http, 'get').andCallThrough();
 
           $templateRequest('tpl.html');
 
@@ -63,7 +63,7 @@ describe('$templateRequest', function() {
         });
 
         inject(function($templateRequest, $http, $cacheFactory) {
-          spyOn($http, 'get').and.callThrough();
+          spyOn($http, 'get').andCallThrough();
 
           var customCache = $cacheFactory('customCache');
           httpOptions.cache = customCache;

@@ -393,21 +393,21 @@ describe('HTML', function() {
       it('should call the uri validator', function() {
         writer.start('a', {href:'someUrl'}, false);
         expect(uriValidator).toHaveBeenCalledWith('someUrl', false);
-        uriValidator.calls.reset();
+        uriValidator.reset();
         writer.start('img', {src:'someImgUrl'}, false);
         expect(uriValidator).toHaveBeenCalledWith('someImgUrl', true);
-        uriValidator.calls.reset();
+        uriValidator.reset();
         writer.start('someTag', {src:'someNonUrl'}, false);
         expect(uriValidator).not.toHaveBeenCalled();
       });
 
       it('should drop non valid uri attributes', function() {
-        uriValidator.and.returnValue(false);
+        uriValidator.andReturn(false);
         writer.start('a', {href:'someUrl'}, false);
         expect(html).toEqual('<a>');
 
         html = '';
-        uriValidator.and.returnValue(true);
+        uriValidator.andReturn(true);
         writer.start('a', {href:'someUrl'}, false);
         expect(html).toEqual('<a href="someUrl">');
       });
@@ -416,18 +416,22 @@ describe('HTML', function() {
 
   describe('uri checking', function() {
     beforeEach(function() {
-      jasmine.addMatchers({
+      this.addMatchers({
         toBeValidUrl: function() {
-          return {
-            compare: function(actual) {
-              var sanitize;
-              inject(function($sanitize) {
-                sanitize = $sanitize;
-              });
-              var input = '<a href="' + actual + '"></a>';
-              return { pass: sanitize(input) === input };
-            }
-          };
+          var sanitize;
+          inject(function($sanitize) {
+            sanitize = $sanitize;
+          });
+          var input = '<a href="' + this.actual + '"></a>';
+          return sanitize(input) === input;
+        },
+        toBeValidImageSrc: function() {
+          var sanitize;
+          inject(function($sanitize) {
+            sanitize = $sanitize;
+          });
+          var input = '<img src="' + this.actual + '"/>';
+          return sanitize(input) === input;
         }
       });
     });
@@ -438,12 +442,12 @@ describe('HTML', function() {
         $provide.value('$$sanitizeUri', $$sanitizeUri);
       });
       inject(function() {
-        $$sanitizeUri.and.returnValue('someUri');
+        $$sanitizeUri.andReturn('someUri');
 
         expectHTML('<a href="someUri"></a>').toEqual('<a href="someUri"></a>');
         expect($$sanitizeUri).toHaveBeenCalledWith('someUri', false);
 
-        $$sanitizeUri.and.returnValue('unsafe:someUri');
+        $$sanitizeUri.andReturn('unsafe:someUri');
         expectHTML('<a href="someUri"></a>').toEqual('<a></a>');
       });
     });
@@ -454,12 +458,12 @@ describe('HTML', function() {
         $provide.value('$$sanitizeUri', $$sanitizeUri);
       });
       inject(function() {
-        $$sanitizeUri.and.returnValue('someUri');
+        $$sanitizeUri.andReturn('someUri');
 
         expectHTML('<img src="someUri"/>').toEqual('<img src="someUri">');
         expect($$sanitizeUri).toHaveBeenCalledWith('someUri', true);
 
-        $$sanitizeUri.and.returnValue('unsafe:someUri');
+        $$sanitizeUri.andReturn('unsafe:someUri');
         expectHTML('<img src="someUri"/>').toEqual('<img>');
       });
     });
