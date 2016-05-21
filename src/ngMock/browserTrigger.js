@@ -38,13 +38,14 @@
         'select-multiple': 'change',
         '_default_':       'click'
       }[inputType || '_default_'];
+
+      if (nodeName === 'option') {
+        element.parentNode.value = element.value;
+        element = element.parentNode;
+        eventType = 'change';
+      }
     }
 
-    if (nodeName === 'option') {
-      element.parentNode.value = element.value;
-      element = element.parentNode;
-      eventType = 'change';
-    }
 
     keys = keys || [];
     function pressed(key) {
