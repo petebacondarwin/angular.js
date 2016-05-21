@@ -1327,7 +1327,6 @@ describe('select', function() {
             expect(selectController.removeOption.calls.argsFor(0)[0]).toBe(prop);
           }
 
-          console.log(element);
 
           expect(scope.selected).toBe(null);
           expect(element[0].selectedIndex).toBe(0);
@@ -1483,7 +1482,6 @@ describe('select', function() {
           expect(optionElements.length).toEqual(3);
           expect(scope.obj.value).toBe(prop === 'ngValue' ? A : 'A');
 
-          console.log('---------------')
           scope.options.shift();
           scope.$digest();
 
@@ -1491,7 +1489,6 @@ describe('select', function() {
           expect(optionElements.length).toEqual(3);
           expect(scope.obj.value).toBe(null);
           expect(element.val()).toBe(prop === 'ngValue' ? '? object:4 ?' : '? string:A ?')
-          console.log('------');
       });
 
 
@@ -1645,7 +1642,6 @@ describe('select', function() {
           expect(optionElements.length).toEqual(3);
           expect(scope.obj.value).toBe('A');
           expect(element.val()).toBe(prop === 'ngValue' ? 'string:A' : 'A');
-          console.log('------------------end------------------')
       });
 
 
@@ -1704,7 +1700,6 @@ describe('select', function() {
           expect(optionElements.length).toEqual(4);
           expect(scope.obj.value).toBe(null);
           expect(element.val()).toBe('? object:null ?');
-          console.log('------------------end------------------')
       });
 
 
@@ -1753,7 +1748,6 @@ describe('select', function() {
           expect(optionElements.length).toEqual(3);
           expect(optionElements[2].selected).toBe(true);
           expect(scope.obj.value).toEqual(prop === 'ngValue' ? {name: 'C', $$hashKey: 'object:4'} : 'C');
-          console.log('---------------end------------------')
       });
 
 
@@ -1803,7 +1797,6 @@ describe('select', function() {
           expect(optionElements[2].selected).toBe(true);
           expect(scope.obj.value).toBe('C');
 
-          console.log('----------------')
           scope.options = [
             {name: 'A'},
             {name: 'B'},
@@ -1816,7 +1809,6 @@ describe('select', function() {
           expect(optionElements.length).toEqual(3);
           expect(optionElements[2].selected).toBe(true);
           expect(scope.obj.value).toBe('C');
-          console.log('---------------end------------------')
       });
 
       describe('when multiple', function() {
@@ -1867,7 +1859,6 @@ describe('select', function() {
             expect(optionElements.length).toEqual(3);
             expect(scope.obj.value).toEqual(prop === 'ngValue' ? [A, C] : ['A', 'C']);
 
-            console.log('-----------before shift------------')
 
             ngModelCtrlSpy.calls.reset();
             scope.options.shift();
@@ -1879,7 +1870,6 @@ describe('select', function() {
             expect(scope.obj.value).toEqual([]);
             expect(element.val()).toBe(null);
             expect(ngModelCtrlSpy).toHaveBeenCalledTimes(1);
-            console.log('------');
         });
 
         they('should set the model to null when the currently selected option with $prop changes its value',
@@ -1939,7 +1929,6 @@ describe('select', function() {
             expect(element.val()).toBe(null);
             expect(ngModelCtrlSpy).toHaveBeenCalledTimes(1);
 
-            console.log('----------------end---------------');
         });
 
         they('should set the model to null when the currently selected option with $prop is disabled',
@@ -2049,7 +2038,6 @@ describe('select', function() {
             expect(optionElements[1].selected).toBe(true);
             expect(optionElements[2].selected).toBe(true);
             expect(scope.obj.value).toEqual(prop === 'ngValue' ? [{ name: 'B', $$hashKey: 'object:4'}, {name: 'C', $$hashKey: 'object:5'}] : ['B', 'C']);
-            console.log('---------------end------------------')
         });
 
         they('should keep selection and model when a repeated options with track by are replaced with equal options',
@@ -2099,7 +2087,6 @@ describe('select', function() {
             expect(optionElements[2].selected).toBe(true);
             expect(scope.obj.value).toEqual(['B', 'C']);
 
-            console.log('----------------')
             scope.options = [
               {name: 'A'},
               {name: 'B'},
@@ -2113,7 +2100,6 @@ describe('select', function() {
             expect(optionElements[1].selected).toBe(true);
             expect(optionElements[2].selected).toBe(true);
             expect(scope.obj.value).toEqual(['B', 'C']);
-            console.log('---------------end------------------')
         });
 
       });

@@ -55,7 +55,6 @@ var SelectController =
     // ngValue added option values are stored in the selectValueMap, normal interpolations are not
     var realVal = val in self.selectValueMap ? self.selectValueMap[val] : val;
 
-    console.log('read', 'elval', val,  'possiblyhashed', realVal)
     if (self.hasOption(realVal)) {
       return realVal;
     }
@@ -67,9 +66,7 @@ var SelectController =
   // Write the value to the select control, the implementation of this changes depending
   // upon whether the select can have multiple values and whether ngOptions is at work.
   self.writeValue = function writeSingleValue(value) {
-    console.log('write', value, 'hasOption', self.hasOption(value));
     if (self.hasOption(value)) {
-      console.log('hasOption', value);
       self.removeUnknownOption();
       var hashedVal = hashKey(value);
       if (hashedVal in self.selectValueMap) {
@@ -77,15 +74,7 @@ var SelectController =
       } else {
         $element.val(value);
       }
-      console.log('after set', $element.val())
-      // console.log('selectValueMap', self.selectValueMap)
-      // var items = new HashMap();
-      // items.put(value, value);
-      // console.log(items, hashKey(value));
 
-      // if (hashKey(value) in self.selectValueMap) {
-      //   console.log('hashed')
-      // }
       if (value === '') self.emptyOption.prop('selected', true); // to make IE9 happy
     } else {
       if (value == null && self.emptyOption) {
@@ -156,10 +145,8 @@ var SelectController =
       // The value attribute is set by ngValue
       var oldVal, hashedVal = NaN;
       optionAttrs.$observe('value', function valueAttributeObserveAction(newVal) {
-        console.log('ngValue change', 'n', newVal, 'o', oldVal, 'hashed', hashedVal)
 
         var removal;
-        console.log('val', $element.val());
         var previouslySelected = optionElement.prop('selected');
 
         if (isDefined(hashedVal)) {
@@ -172,13 +159,10 @@ var SelectController =
         oldVal = newVal;
         self.selectValueMap[hashedVal] = newVal;
         self.addOption(newVal, optionElement);
-        console.log('val', $element.val());
         // Set the attribute directly instead of using optionAttrs.$set - this stops the observer
         // from firing a second time. Other $observers on value will also get the result of the
         // ngValue expression, not the hashed value
         optionElement.attr('value', hashedVal);
-
-        console.log('previouslySelected', previouslySelected, 'removal', removal)
 
         if (removal && previouslySelected) {
           updateModelAfterOptionChange();
@@ -188,7 +172,6 @@ var SelectController =
     } else if (interpolateValueFn) {
       // The value attribute is interpolated
       optionAttrs.$observe('value', function valueAttributeObserveAction(newVal) {
-        // console.log('value attribute changed', 'viewVal', self.ngModelCtrl.$viewValue, 'index', optionElement[0].index, 'indices', $element[0].selectedIndex, $element[0].selectedOptions)
         var currentVal = self.readValue();
         var removal;
         var previouslySelected = optionElement.prop('selected');
@@ -202,9 +185,7 @@ var SelectController =
         oldVal = newVal;
         self.addOption(newVal, optionElement);
 
-        console.log('updated interpolated value', 'new', newVal, 'removed', removedVal, 'current', currentVal);
         if (removal && previouslySelected) {
-          console.log('removed val is currently selected', $element.val())
           updateModelAfterOptionChange();
         }
       });
@@ -235,7 +216,6 @@ var SelectController =
       // we only have to handle options becomeing disabled, not enabled
 
       if (newVal === 'true' || newVal && optionElement.prop('selected')) {
-        console.log('disabled')
 
         if (self.multiple) {
           updateModelAfterOptionChange(true);
@@ -245,39 +225,24 @@ var SelectController =
         }
         oldDisabled = newVal;
       }
-
-      // else if (isDefined(oldDisabled) && !newVal || newVal === 'false') {
-        // var val = optionAttrs.value;
-        // console.log('OA', optionAttrs.value);
-        // var realVal = val in self.selectValueMap ? self.selectValueMap[val] : val;
-        // console.log('back from disabled', val, realVal, self.ngModelCtrl.$viewValue);
-
-        // if (realVal === self.ngModelCtrl.$viewValue) {
-        //   self.writeValue(realVal);
-        //   self.ngModelCtrl.$setViewValue(self.readValue());
-        // }
-      // }
     });
 
     optionElement.on('$destroy', function() {
       var currentValue = self.readValue();
       var removeValue = optionAttrs.value;
 
-      console.log('destroy', 'removed', removeValue, 'elval',  $element.val())
-      // console.log('viewValue', self.ngModelCtrl.$viewValue)
       self.removeOption(removeValue);
       self.ngModelCtrl.$render();
 
       if (self.multiple && currentValue && currentValue.indexOf(removeValue) !== -1) {
         // When multiple (selected) options are destroyed at the same time, we don't want
         // to run a model update for each of them. Instead, run a single update in the $$postDigest
-        // NOTE: Will that interfere with the regular model update?
+        // NOTE: Will that interfere with the regular model update? No - $setViewValue always triggers a digest
+        // However, it might not work if someones removes an option outside of a digest
         updateModelAfterOptionChange();
       } else if (currentValue === removeValue) {
         self.ngModelCtrl.$setViewValue(self.readValue());
-        
       }
-      // console.log('read after render', self.readValue())
     });
   };
 }];
@@ -513,7 +478,6 @@ var selectDirective = function() {
       // to the `readValue` method, which can be changed if the select can have multiple
       // selected values or if the options are being generated by `ngOptions`
       element.on('change', function() {
-        console.log('on change', element.val())
         selectCtrl.removeUnknownOption();
         scope.$apply(function() {
           ngModelCtrl.$setViewValue(selectCtrl.readValue());
@@ -530,8 +494,8 @@ var selectDirective = function() {
         // Read value now needs to check each option to see if it is selected
         selectCtrl.readValue = function readMultipleValue() {
           var array = [];
+          var options = element.find('option')
           forEach(element.find('option'), function(option) {
-            // console.log('read m o', option);
             if (option.selected && !option.disabled) {
               var val = option.value;
               array.push(val in selectCtrl.selectValueMap ? selectCtrl.selectValueMap[val] : val);

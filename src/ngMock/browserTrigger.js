@@ -95,6 +95,7 @@
       evnt = window.document.createEvent('MouseEvents');
       x = x || 0;
       y = y || 0;
+      // console.log('trigger', element.relatedTarget, eventType, pressed('ctrl'))
       evnt.initMouseEvent(eventType, true, true, window, 0, x, y, x, y, pressed('ctrl'),
           pressed('alt'), pressed('shift'), pressed('meta'), 0, relatedTarget);
     }
