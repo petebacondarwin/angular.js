@@ -48,19 +48,43 @@ var SelectController =
   // Read the value of the select control, the implementation of this changes depending
   // upon whether the select can have multiple values and whether ngOptions is at work.
   self.readValue = function readSingleValue() {
-    self.removeUnknownOption();
     var val = $element.val();
     // ngValue added option values are stored in the selectValueMap, normal interpolations are not
-    return val in self.selectValueMap ? self.selectValueMap[val] : val;
+    var realVal = val in self.selectValueMap ? self.selectValueMap[val] : val;
+
+    console.log('read', 'elval', val,  'possiblyhashed', realVal)
+    if (self.hasOption(realVal)) {
+      console.log('has selected val', realVal)
+      // self.removeUnknownOption();
+      return realVal;
+    }
+
+    return null;
   };
 
 
   // Write the value to the select control, the implementation of this changes depending
   // upon whether the select can have multiple values and whether ngOptions is at work.
   self.writeValue = function writeSingleValue(value) {
+    console.log('write', value);
     if (self.hasOption(value)) {
+      console.log('hasOption', value);
       self.removeUnknownOption();
-      $element.val(value);
+      var hashedVal = hashKey(value);
+      if (hashedVal in self.selectValueMap) {
+        $element.val(hashedVal);
+      } else {
+        $element.val(value);
+      }
+      console.log('after set', $element.val())
+      // console.log('selectValueMap', self.selectValueMap)
+      // var items = new HashMap();
+      // items.put(value, value);
+      // console.log(items, hashKey(value));
+
+      // if (hashKey(value) in self.selectValueMap) {
+      //   console.log('hashed')
+      // }
       if (value === '') self.emptyOption.prop('selected', true); // to make IE9 happy
     } else {
       if (value == null && self.emptyOption) {
@@ -110,50 +134,124 @@ var SelectController =
 
   self.registerOption = function(optionScope, optionElement, optionAttrs, interpolateValueFn, interpolateTextFn) {
 
-    if (interpolateValueFn === true) {
+    // console.log('attr', optionAttrs)
+    if (optionAttrs.$attr.ngValue) {
       // The value attribute is set by ngValue
       var oldVal, hashedVal = NaN;
       optionAttrs.$observe('value', function valueAttributeObserveAction(newVal) {
+        console.log('ngValue change', 'n', newVal, 'o', oldVal, 'hashed', hashedVal)
+
+        var removal;
+        console.log('val', $element.val());
+        var previouslySelected = optionElement.prop('selected');
+
         if (isDefined(hashedVal)) {
           self.removeOption(oldVal);
           delete self.selectValueMap[hashedVal];
+          removal = true;
         }
 
         hashedVal = hashKey(newVal);
         oldVal = newVal;
-        self.addOption(newVal, optionElement);
         self.selectValueMap[hashedVal] = newVal;
+        self.addOption(newVal, optionElement);
+        console.log('val', $element.val());
         // Set the attribute directly instead of using optionAttrs.$set - this stops the observer
         // from firing a second time. Other $observers on value will also get the result of the
         // ngValue expression, not the hashed value
         optionElement.attr('value', hashedVal);
+
+        console.log('previouslySelected', previouslySelected, 'removal', removal)
+
+        if (removal && previouslySelected) {
+          console.log('removed val is currently selected', $element.val())
+          self.ngModelCtrl.$setViewValue(self.readValue());
+        }  
+
       });
     } else if (interpolateValueFn) {
       // The value attribute is interpolated
       optionAttrs.$observe('value', function valueAttributeObserveAction(newVal) {
+        // console.log('value attribute changed', 'viewVal', self.ngModelCtrl.$viewValue, 'index', optionElement[0].index, 'indices', $element[0].selectedIndex, $element[0].selectedOptions)
+        var currentVal = self.readValue();
+        var removal;
+        var previouslySelected = optionElement.prop('selected');
+        var removedVal;
+
         if (isDefined(oldVal)) {
           self.removeOption(oldVal);
+          removal = true;
+          removedVal = oldVal;
         }
         oldVal = newVal;
         self.addOption(newVal, optionElement);
+
+        console.log('updated interpolated value', 'new', newVal, 'removed', removedVal, 'current', currentVal);
+        if (removal && previouslySelected) {
+          console.log('removed val is currently selected', $element.val())
+          self.ngModelCtrl.$setViewValue(self.readValue());
+        }        
       });
     } else if (interpolateTextFn) {
       // The text content is interpolated
       optionScope.$watch(interpolateTextFn, function interpolateWatchAction(newVal, oldVal) {
         optionAttrs.$set('value', newVal);
+        var previouslySelected = optionElement.prop('selected');
         if (oldVal !== newVal) {
           self.removeOption(oldVal);
         }
         self.addOption(newVal, optionElement);
+
+        if (oldVal && previouslySelected) {
+          self.ngModelCtrl.$setViewValue(self.readValue());
+        }
       });
     } else {
       // The value attribute is static
       self.addOption(optionAttrs.value, optionElement);
     }
 
+
+    var oldDisabled;
+    optionAttrs.$observe('disabled', function(newVal) {
+
+      // Since model updates will also select disabled options (like ngOptions),
+      // we only have to handle options becomeing disabled, not enabled
+
+      if (newVal === 'true' || newVal && optionElement.prop('selected')) {
+        console.log('disabled')
+        self.ngModelCtrl.$setViewValue(null);
+        self.ngModelCtrl.$render();
+        oldDisabled = newVal;
+      } else if (isDefined(oldDisabled) && !newVal || newVal === 'false') {
+        // var val = optionAttrs.value;
+        // console.log('OA', optionAttrs.value);
+        // var realVal = val in self.selectValueMap ? self.selectValueMap[val] : val;
+        // console.log('back from disabled', val, realVal, self.ngModelCtrl.$viewValue);
+
+        // if (realVal === self.ngModelCtrl.$viewValue) {
+        //   self.writeValue(realVal);
+        //   self.ngModelCtrl.$setViewValue(self.readValue());
+        // }
+      }
+    });
+
     optionElement.on('$destroy', function() {
-      self.removeOption(optionAttrs.value);
+      var currentValue = self.readValue();
+      var removeValue = optionAttrs.value;
+
+      console.log('destroy', removeValue, 'elval',  $element.val())
+      // console.log('viewValue', self.ngModelCtrl.$viewValue)
+      self.removeOption(removeValue);
       self.ngModelCtrl.$render();
+
+      if (currentValue === removeValue) {
+        // console.log('removed val is currently selected', $element.val())
+        // console.log('self.readValue()', self.readValue());
+        self.ngModelCtrl.$setViewValue(self.readValue());
+        
+      }
+      // console.log('read after render', self.readValue())
     });
   };
 }];
@@ -389,6 +487,8 @@ var selectDirective = function() {
       // to the `readValue` method, which can be changed if the select can have multiple
       // selected values or if the options are being generated by `ngOptions`
       element.on('change', function() {
+        console.log('on change', element.val())
+        selectCtrl.removeUnknownOption();
         scope.$apply(function() {
           ngModelCtrl.$setViewValue(selectCtrl.readValue());
         });
@@ -467,17 +567,17 @@ var optionDirective = ['$interpolate', function($interpolate) {
     restrict: 'E',
     priority: 100,
     compile: function(element, attr) {
-      var interpolateValueFn;
+      var interpolateValueFn, interpolateTextFn;
 
       if (isDefined(attr.ngValue)) {
-        interpolateValueFn = true;
+        // Will be handled by registerOption
       } else if (isDefined(attr.value)) {
         // If the value attribute is defined, check if it contains an interpolation
         interpolateValueFn = $interpolate(attr.value, true);
       } else {
         // If the value attribute is not defined then we fall back to the
         // text content of the option element, which may be interpolated
-        var interpolateTextFn = $interpolate(element.text(), true);
+        interpolateTextFn = $interpolate(element.text(), true);
         if (!interpolateTextFn) {
           attr.$set('value', element.text());
         }
