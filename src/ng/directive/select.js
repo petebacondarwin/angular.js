@@ -494,7 +494,6 @@ var selectDirective = function() {
         // Read value now needs to check each option to see if it is selected
         selectCtrl.readValue = function readMultipleValue() {
           var array = [];
-          var options = element.find('option')
           forEach(element.find('option'), function(option) {
             if (option.selected && !option.disabled) {
               var val = option.value;
@@ -562,6 +561,7 @@ var optionDirective = ['$interpolate', function($interpolate) {
       var interpolateValueFn, interpolateTextFn;
 
       if (isDefined(attr.ngValue)) {
+        // jshint noempty: false
         // Will be handled by registerOption
       } else if (isDefined(attr.value)) {
         // If the value attribute is defined, check if it contains an interpolation

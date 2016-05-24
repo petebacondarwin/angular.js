@@ -1488,7 +1488,7 @@ describe('select', function() {
           optionElements = element.find('option');
           expect(optionElements.length).toEqual(3);
           expect(scope.obj.value).toBe(null);
-          expect(element.val()).toBe(prop === 'ngValue' ? '? object:4 ?' : '? string:A ?')
+          expect(element.val()).toBe(prop === 'ngValue' ? '? object:4 ?' : '? string:A ?');
       });
 
 
@@ -1538,7 +1538,7 @@ describe('select', function() {
           optionElements = element.find('option');
           expect(optionElements.length).toEqual(4);
           expect(scope.obj.value).toBe(null);
-          expect(element.val()).toBe('? string:A ?')
+          expect(element.val()).toBe('? string:A ?');
       });
 
 
@@ -1631,7 +1631,7 @@ describe('select', function() {
           B.disabled = true;
           scope.$digest();
 
-          var optionElements = element.find('option');
+          optionElements = element.find('option');
           expect(optionElements.length).toEqual(4);
           expect(optionElements[0].value).toEqual(unknownValue(undefined));
 
@@ -1717,7 +1717,7 @@ describe('select', function() {
 
           scope.options = [A, B];
           scope.obj = {
-            value : prop === 'ngValue' ? C : 'C'
+            value: prop === 'ngValue' ? C : 'C'
           };
 
           var optionString = '';
@@ -1765,7 +1765,7 @@ describe('select', function() {
 
           scope.options = [A, B, C];
           scope.obj = {
-            value : 'C'
+            value: 'C'
           };
 
           var optionString = '';
@@ -2034,7 +2034,7 @@ describe('select', function() {
             D.disabled = true;
             scope.$digest();
 
-            var optionElements = element.find('option');
+            optionElements = element.find('option');
             expect(optionElements.length).toEqual(4);
             expect(element[0].value).toBe('');
 
@@ -2068,7 +2068,7 @@ describe('select', function() {
 
             scope.options = [A, B];
             scope.obj = {
-              value : prop === 'ngValue' ? [B, C] : ['B', 'C']
+              value: prop === 'ngValue' ? [B, C] : ['B', 'C']
             };
 
             var optionString = '';
@@ -2099,11 +2099,14 @@ describe('select', function() {
             scope.$digest();
 
             optionElements = element.find('option');
-            expect(element.val()).toEqual(prop === 'ngValue' ? [ 'object:4', 'object:5' ]: ['B', 'C']);
+            expect(element.val()).toEqual(prop === 'ngValue' ? ['object:4', 'object:5'] : ['B', 'C']);
             expect(optionElements.length).toEqual(3);
             expect(optionElements[1].selected).toBe(true);
             expect(optionElements[2].selected).toBe(true);
-            expect(scope.obj.value).toEqual(prop === 'ngValue' ? [{ name: 'B', $$hashKey: 'object:4'}, {name: 'C', $$hashKey: 'object:5'}] : ['B', 'C']);
+            expect(scope.obj.value).toEqual(prop === 'ngValue' ?
+              [{ name: 'B', $$hashKey: 'object:4'},
+              {name: 'C', $$hashKey: 'object:5'}] :
+              ['B', 'C']);
         });
 
         they('should keep selection and model when a repeated options with track by are replaced with equal options',
@@ -2117,7 +2120,7 @@ describe('select', function() {
 
             scope.options = [A, B, C];
             scope.obj = {
-              value : 'C'
+              value: 'C'
             };
 
             var optionString = '';
