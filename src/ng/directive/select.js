@@ -106,7 +106,7 @@ var SelectController =
     }
     var count = optionsMap.get(value) || 0;
     optionsMap.put(value, count + 1);
-    self.ngModelCtrl.$render();
+    scheduleRender();
   };
 
   // Tell the select control that an option, with the given value, has been removed
@@ -128,6 +128,16 @@ var SelectController =
   self.hasOption = function(value) {
     return !!optionsMap.get(value);
   };
+
+  var renderScheduled = false;
+  function scheduleRender() {
+    if (renderScheduled) return;
+    renderScheduled = true;
+    $scope.$$postDigest(function() {
+      renderScheduled = false;
+      self.ngModelCtrl.$render();
+    });
+  }
 
   var handleMultipleChanges = false;
   function updateModelAfterOptionChange(renderAfter) {
